@@ -1,0 +1,219 @@
+{% import '_includes/forms' as forms %}
+
+{% macro configWarning(setting) -%}
+    {% set configArray = craft.app.config.getConfigFromFile('stars') %}
+    {% if configArray[setting] is defined -%}
+        {{ 'This is being overridden by the {setting} config setting in your {file} config file.'|t('stars', {
+            setting: setting,
+            file: 'stars.php'
+        })|raw }}
+    {%- endif %}
+{%- endmacro %}
+
+{% from _self import configWarning %}
+
+{# ── Moderation ── #}
+<h2>{{ 'Moderation'|t('stars') }}</h2>
+
+{{ forms.selectField({
+    label: 'Default Status'|t('stars'),
+    instructions: 'Status assigned to new reviews submitted from the frontend.'|t('stars'),
+    id: 'defaultStatus',
+    name: 'defaultStatus',
+    value: settings.defaultStatus,
+    options: [
+        { label: 'Pending (requires approval)'|t('stars'), value: 'pending' },
+        { label: 'Approved (publish immediately)'|t('stars'), value: 'approved' },
+    ],
+    warning: configWarning('defaultStatus'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Require Login'|t('stars'),
+    instructions: 'Only logged-in users can submit reviews.'|t('stars'),
+    id: 'requireLogin',
+    name: 'requireLogin',
+    on: settings.requireLogin,
+    warning: configWarning('requireLogin'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Allow Anonymous'|t('stars'),
+    instructions: 'Allow reviews without a name or email.'|t('stars'),
+    id: 'allowAnonymous',
+    name: 'allowAnonymous',
+    on: settings.allowAnonymous,
+    warning: configWarning('allowAnonymous'),
+}) }}
+
+<hr>
+
+{# ── Rating ── #}
+<h2>{{ 'Rating'|t('stars') }}</h2>
+
+{{ forms.selectField({
+    label: 'Max Rating'|t('stars'),
+    instructions: 'Maximum star rating value (1-10).'|t('stars'),
+    id: 'maxRating',
+    name: 'maxRating',
+    value: settings.maxRating,
+    options: [
+        { label: '5 Stars', value: 5 },
+        { label: '10 Stars', value: 10 },
+    ],
+    warning: configWarning('maxRating'),
+}) }}
+
+<hr>
+
+{# ── Notifications ── #}
+<h2>{{ 'Notifications'|t('stars') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Enable Notifications'|t('stars'),
+    instructions: 'Send an email when a new review is submitted.'|t('stars'),
+    id: 'enableNotifications',
+    name: 'enableNotifications',
+    on: settings.enableNotifications,
+    warning: configWarning('enableNotifications'),
+}) }}
+
+{{ forms.textField({
+    label: 'Notification Emails'|t('stars'),
+    instructions: 'Comma-separated email addresses. Leave blank to use the system email.'|t('stars'),
+    id: 'notificationEmails',
+    name: 'notificationEmails',
+    value: settings.notificationEmails,
+    placeholder: 'admin@example.com',
+    warning: configWarning('notificationEmails'),
+}) }}
+
+<hr>
+
+{# ── Anti-Spam ── #}
+<h2>{{ 'Anti-Spam'|t('stars') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Enable Honeypot'|t('stars'),
+    instructions: 'Add a hidden field to catch bots.'|t('stars'),
+    id: 'enableHoneypot',
+    name: 'enableHoneypot',
+    on: settings.enableHoneypot,
+    warning: configWarning('enableHoneypot'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable reCAPTCHA'|t('stars'),
+    instructions: 'Use Google reCAPTCHA v3 to validate submissions.'|t('stars'),
+    id: 'enableRecaptcha',
+    name: 'enableRecaptcha',
+    on: settings.enableRecaptcha,
+    warning: configWarning('enableRecaptcha'),
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'reCAPTCHA Site Key'|t('stars'),
+    id: 'recaptchaSiteKey',
+    name: 'recaptchaSiteKey',
+    suggestEnvVars: true,
+    value: settings.recaptchaSiteKey,
+    warning: configWarning('recaptchaSiteKey'),
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'reCAPTCHA Secret Key'|t('stars'),
+    id: 'recaptchaSecretKey',
+    name: 'recaptchaSecretKey',
+    suggestEnvVars: true,
+    value: settings.recaptchaSecretKey,
+    warning: configWarning('recaptchaSecretKey'),
+}) }}
+
+{{ forms.textField({
+    label: 'Rate Limit (minutes)'|t('stars'),
+    instructions: 'Minimum minutes between reviews from the same IP for the same entry. Set to 0 to disable.'|t('stars'),
+    id: 'rateLimitMinutes',
+    name: 'rateLimitMinutes',
+    value: settings.rateLimitMinutes,
+    type: 'number',
+    min: 0,
+    warning: configWarning('rateLimitMinutes'),
+}) }}
+
+{{ forms.textField({
+    label: 'Min Submission Time (seconds)'|t('stars'),
+    instructions: 'Reject submissions faster than this many seconds (bot detection). Set to 0 to disable.'|t('stars'),
+    id: 'minSubmissionTime',
+    name: 'minSubmissionTime',
+    value: settings.minSubmissionTime,
+    type: 'number',
+    min: 0,
+    warning: configWarning('minSubmissionTime'),
+}) }}
+
+<hr>
+
+{# ── Schema.org ── #}
+<h2>{{ 'Schema.org'|t('stars') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Enable Schema.org'|t('stars'),
+    instructions: 'Enable JSON-LD structured data output via craft.reviews.schemaOrg().'|t('stars'),
+    id: 'enableSchemaOrg',
+    name: 'enableSchemaOrg',
+    on: settings.enableSchemaOrg,
+    warning: configWarning('enableSchemaOrg'),
+}) }}
+
+{{ forms.selectField({
+    label: 'Schema Item Type'|t('stars'),
+    instructions: 'The schema.org @type for the reviewed item.'|t('stars'),
+    id: 'schemaItemType',
+    name: 'schemaItemType',
+    value: settings.schemaItemType,
+    options: [
+        { label: 'Product', value: 'Product' },
+        { label: 'LocalBusiness', value: 'LocalBusiness' },
+        { label: 'Organization', value: 'Organization' },
+        { label: 'CreativeWork', value: 'CreativeWork' },
+        { label: 'Book', value: 'Book' },
+        { label: 'Movie', value: 'Movie' },
+        { label: 'Restaurant', value: 'Restaurant' },
+        { label: 'Course', value: 'Course' },
+        { label: 'Event', value: 'Event' },
+        { label: 'SoftwareApplication', value: 'SoftwareApplication' },
+    ],
+    warning: configWarning('schemaItemType'),
+}) }}
+
+<hr>
+
+{# ── Features ── #}
+<h2>{{ 'Features'|t('stars') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Enable Pros'|t('stars'),
+    instructions: 'Show the Pros field on reviews.'|t('stars'),
+    id: 'enablePros',
+    name: 'enablePros',
+    on: settings.enablePros,
+    warning: configWarning('enablePros'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Cons'|t('stars'),
+    instructions: 'Show the Cons field on reviews.'|t('stars'),
+    id: 'enableCons',
+    name: 'enableCons',
+    on: settings.enableCons,
+    warning: configWarning('enableCons'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Admin Response'|t('stars'),
+    instructions: 'Allow admins to reply to reviews.'|t('stars'),
+    id: 'enableAdminResponse',
+    name: 'enableAdminResponse',
+    on: settings.enableAdminResponse,
+    warning: configWarning('enableAdminResponse'),
+}) }}

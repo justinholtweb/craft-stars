@@ -1,0 +1,36 @@
+<h2>{{ 'New Review Submitted'|t('stars') }}</h2>
+
+<table cellpadding="8" cellspacing="0" border="0" style="border-collapse: collapse;">
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Entry'|t('stars') }}:</td>
+        <td>{% if entry %}{{ entry.title }}{% else %}{{ 'Unknown'|t('stars') }}{% endif %}</td>
+    </tr>
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Reviewer'|t('stars') }}:</td>
+        <td>{{ review.reviewerName }}</td>
+    </tr>
+    {% if review.reviewerEmail %}
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Email'|t('stars') }}:</td>
+        <td><a href="mailto:{{ review.reviewerEmail }}">{{ review.reviewerEmail }}</a></td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Rating'|t('stars') }}:</td>
+        <td>{{ review.rating }}/{{ settings.maxRating }}</td>
+    </tr>
+    {% if review.reviewText %}
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Review'|t('stars') }}:</td>
+        <td>{{ review.reviewText }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Status'|t('stars') }}:</td>
+        <td>{{ review.reviewStatus|capitalize }}</td>
+    </tr>
+</table>
+
+{% if review.id %}
+<p><a href="{{ cpUrl('stars/reviews/' ~ review.id) }}">{{ 'View in Control Panel'|t('stars') }}</a></p>
+{% endif %}

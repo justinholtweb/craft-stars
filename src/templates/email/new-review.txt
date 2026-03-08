@@ -1,0 +1,17 @@
+{{ 'New Review Submitted'|t('stars') }}
+================================
+
+{{ 'Entry'|t('stars') }}: {% if entry %}{{ entry.title }}{% else %}{{ 'Unknown'|t('stars') }}{% endif %}
+
+{{ 'Reviewer'|t('stars') }}: {{ review.reviewerName }}
+{% if review.reviewerEmail %}{{ 'Email'|t('stars') }}: {{ review.reviewerEmail }}
+{% endif %}
+{{ 'Rating'|t('stars') }}: {{ review.rating }}/{{ settings.maxRating }}
+{% if review.reviewText %}
+{{ 'Review'|t('stars') }}:
+{{ review.reviewText }}
+{% endif %}
+{{ 'Status'|t('stars') }}: {{ review.reviewStatus|capitalize }}
+{% if review.id %}
+{{ 'View in Control Panel'|t('stars') }}: {{ cpUrl('stars/reviews/' ~ review.id) }}
+{% endif %}

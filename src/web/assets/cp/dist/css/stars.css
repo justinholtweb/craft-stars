@@ -1,0 +1,49 @@
+/* Stars plugin CP styles */
+
+/* Star rating display in element index */
+.stars-rating {
+    white-space: nowrap;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.stars-rating .star {
+    display: inline;
+}
+
+.stars-rating .star.filled {
+    color: #F5A623;
+}
+
+.stars-rating .star.empty {
+    color: #D1D5DB;
+}
+
+/* Star rating selector on edit page */
+.stars-selector {
+    display: flex;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.stars-selector .star-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 24px;
+    cursor: pointer;
+    color: #D1D5DB;
+    transition: color 0.15s ease;
+    line-height: 1;
+}
+
+.stars-selector .star-btn:hover,
+.stars-selector .star-btn.active {
+    color: #F5A623;
+}
+
+.stars-selector .star-btn:focus {
+    outline: 2px solid #0d99f2;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
