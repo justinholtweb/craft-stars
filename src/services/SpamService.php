@@ -12,8 +12,11 @@ class SpamService extends Component
 {
     /**
      * Run all spam checks. Returns true if the submission appears to be spam.
+     *
+     * @param string $context Which submission type is being checked ('reviews'
+     *                        or 'comments') — determines the rate-limit table.
      */
-    public function isSpam(): bool
+    public function isSpam(string $context = 'reviews'): bool
     {
         $settings = Plugin::getInstance()->getSettings();
 
@@ -25,7 +28,7 @@ class SpamService extends Component
             return true;
         }
 
-        if (!$this->checkRateLimit()) {
+        if (!$this->checkRateLimit($context)) {
             return true;
         }
 
@@ -79,8 +82,11 @@ class SpamService extends Component
 
     /**
      * Check rate limit. Returns false if the user is submitting too frequently.
+     *
+     * @param string $context 'reviews' or 'comments' — selects the table to
+     *                        count recent submissions against.
      */
-    public function checkRateLimit(): bool
+    public function checkRateLimit(string $context = 'reviews'): bool
     {
         $settings = Plugin::getInstance()->getSettings();
 
@@ -98,7 +104,7 @@ class SpamService extends Component
         $cutoff = (new \DateTime())->modify("-{$settings->rateLimitMinutes} minutes")->format('Y-m-d H:i:s');
 
         $query = (new Query())
-            ->from('{{%stars_reviews}}')
+            ->from($this->_tableForContext($context))
             ->where(['ipAddress' => $ip])
             ->andWhere(['>=', 'dateCreated', $cutoff]);
 
@@ -108,6 +114,14 @@ class SpamService extends Component
 
         // count() can return a numeric string; cast before comparing.
         return (int)$query->count() === 0;
+    }
+
+    /**
+     * Map a submission context to its custom table.
+     */
+    private function _tableForContext(string $context): string
+    {
+        return $context === 'comments' ? '{{%stars_comments}}' : '{{%stars_reviews}}';
     }
 
     /**

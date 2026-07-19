@@ -169,6 +169,65 @@ Place in your `<head>` to output valid JSON-LD for Google Rich Results:
 
 All methods accept an `Entry` object or an entry ID integer.
 
+## Comments
+
+Stars also provides a threaded comment system on entries, with the same
+moderation, spam protection, and login-gating as reviews.
+
+### Comment Form
+
+```twig
+<form method="post">
+    {{ csrfInput() }}
+    {{ actionInput('stars/comments/save') }}
+    {{ redirectInput('') }}
+    <input type="hidden" name="entryId" value="{{ entry.id }}">
+    {# For a reply, include the parent comment's id: #}
+    {# <input type="hidden" name="parentId" value="{{ parentComment.id }}"> #}
+    <input type="hidden" name="__stars_ts" value="{{ now|date('U') }}">
+    <div style="position:absolute;left:-9999px" aria-hidden="true">
+        <input type="text" name="starsHoneypot" tabindex="-1" autocomplete="off">
+    </div>
+
+    {# Name/email are only used for guests; logged-in users are filled in automatically. #}
+    <label for="authorName">Name</label>
+    <input type="text" id="authorName" name="authorName">
+
+    <label for="body">Comment</label>
+    <textarea id="body" name="body" required></textarea>
+
+    <button type="submit">Post Comment</button>
+</form>
+```
+
+### Displaying Comments
+
+```twig
+{% for comment in craft.comments.topLevel(entry).all() %}
+    <article class="comment">
+        <strong>{{ comment.authorName }}</strong>
+        <time datetime="{{ comment.dateCreated|date('Y-m-d') }}">{{ comment.dateCreated|date('M j, Y') }}</time>
+        <p>{{ comment.body }}</p>
+
+        {% for reply in craft.comments.replies(comment) %}
+            <article class="comment comment--reply">
+                <strong>{{ reply.authorName }}</strong>
+                <p>{{ reply.body }}</p>
+            </article>
+        {% endfor %}
+    </article>
+{% endfor %}
+```
+
+### `craft.comments` API
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `craft.comments.forEntry(entry)` | `CommentQuery` | Approved comments for an entry, oldest first |
+| `craft.comments.topLevel(entry)` | `CommentQuery` | Approved top-level comments (no replies) |
+| `craft.comments.replies(comment)` | `array` | Approved replies to a comment |
+| `craft.comments.count(entry)` | `int` | Count of approved comments |
+
 ## Configuration
 
 All settings are available in the CP under **Stars > Settings**. You can also override them in `config/stars.php`:

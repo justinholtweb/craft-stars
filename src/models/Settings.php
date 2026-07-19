@@ -42,6 +42,8 @@ class Settings extends Model
 
     // Comments
     public bool $enableComments = true;
+    public bool $commentsRequireLogin = false;
+    public bool $commentsAllowAnonymous = false;
 
     public function defineRules(): array
     {
@@ -51,7 +53,7 @@ class Settings extends Model
             [['rateLimitMinutes'], 'integer', 'min' => 0],
             [['minSubmissionTime'], 'integer', 'min' => 0],
             [['recaptchaSiteKey', 'recaptchaSecretKey', 'notificationEmails', 'schemaItemType'], 'string'],
-            [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer', 'enableComments'], 'boolean'],
+            [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer', 'enableComments', 'commentsRequireLogin', 'commentsAllowAnonymous'], 'boolean'],
         ];
     }
 }

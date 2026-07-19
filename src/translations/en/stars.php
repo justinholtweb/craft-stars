@@ -74,4 +74,12 @@ return [
     'Moderate comments (approve, reject, spam)' => 'Moderate comments (approve, reject, spam)',
     'Reply to comments' => 'Reply to comments',
     'Delete comments' => 'Delete comments',
+    'Comments Require Login' => 'Comments Require Login',
+    'Allow Anonymous Comments' => 'Allow Anonymous Comments',
+    'Comment saved.' => 'Comment saved.',
+    'Couldn\'t save comment.' => 'Couldn\'t save comment.',
+    'Comments are disabled.' => 'Comments are disabled.',
+    'You must be logged in to comment.' => 'You must be logged in to comment.',
+    'Your submission was flagged as spam.' => 'Your submission was flagged as spam.',
+    'Your name is required.' => 'Your name is required.',
 ];

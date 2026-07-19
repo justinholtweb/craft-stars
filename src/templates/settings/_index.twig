@@ -263,3 +263,21 @@
     on: settings.enableComments,
     warning: configWarning('enableComments'),
 }) }}
+
+{{ forms.lightswitchField({
+    label: 'Comments Require Login'|t('stars'),
+    instructions: 'Only logged-in users may submit comments.'|t('stars'),
+    id: 'commentsRequireLogin',
+    name: 'commentsRequireLogin',
+    on: settings.commentsRequireLogin,
+    warning: configWarning('commentsRequireLogin'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Allow Anonymous Comments'|t('stars'),
+    instructions: 'Allow guests to comment without providing a name.'|t('stars'),
+    id: 'commentsAllowAnonymous',
+    name: 'commentsAllowAnonymous',
+    on: settings.commentsAllowAnonymous,
+    warning: configWarning('commentsAllowAnonymous'),
+}) }}

@@ -20,6 +20,7 @@ use justinholtweb\stars\services\NotificationService;
 use justinholtweb\stars\services\ReviewService;
 use justinholtweb\stars\services\SchemaService;
 use justinholtweb\stars\services\SpamService;
+use justinholtweb\stars\twig\CommentsVariable;
 use justinholtweb\stars\twig\StarsVariable;
 use justinholtweb\stars\web\assets\cp\CpAsset;
 use yii\base\Event;
@@ -139,6 +140,7 @@ class Plugin extends BasePlugin
             CraftVariable::EVENT_INIT,
             function (Event $event) {
                 $event->sender->set('reviews', StarsVariable::class);
+                $event->sender->set('comments', CommentsVariable::class);
             }
         );
     }

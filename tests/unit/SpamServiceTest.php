@@ -17,6 +17,7 @@ use justinholtweb\stars\services\SpamService;
 class SpamServiceTest extends Unit
 {
     use CreatesReviews;
+    use CreatesComments;
 
     protected \UnitTester $tester;
 
@@ -97,5 +98,18 @@ class SpamServiceTest extends Unit
 
         $this->fakeRequest([], '203.0.113.99');
         self::assertTrue($this->spam->checkRateLimit());
+    }
+
+    public function testRateLimitContextSelectsTheRightTable(): void
+    {
+        Plugin::getInstance()->getSettings()->rateLimitMinutes = 1440;
+
+        // A recent comment (but no review) from this IP.
+        $this->createComment(['ipAddress' => '203.0.113.55']);
+        $this->fakeRequest([], '203.0.113.55');
+
+        // Blocked in the comments context, allowed in the reviews context.
+        self::assertFalse($this->spam->checkRateLimit('comments'));
+        self::assertTrue($this->spam->checkRateLimit('reviews'));
     }
 }
