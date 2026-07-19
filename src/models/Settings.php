@@ -26,6 +26,11 @@ class Settings extends Model
     public int $rateLimitMinutes = 1440;
     public int $minSubmissionTime = 3;
 
+    // Privacy
+    public bool $captureIpAddress = true;
+    public bool $captureUserAgent = true;
+    public bool $captureReferrer = true;
+
     // Schema.org
     public bool $enableSchemaOrg = true;
     public string $schemaItemType = 'Product';
@@ -43,7 +48,7 @@ class Settings extends Model
             [['rateLimitMinutes'], 'integer', 'min' => 0],
             [['minSubmissionTime'], 'integer', 'min' => 0],
             [['recaptchaSiteKey', 'recaptchaSecretKey', 'notificationEmails', 'schemaItemType'], 'string'],
-            [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse'], 'boolean'],
+            [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer'], 'boolean'],
         ];
     }
 }

@@ -153,6 +153,38 @@
 
 <hr>
 
+{# ── Privacy ── #}
+<h2>{{ 'Privacy'|t('stars') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Capture IP Address'|t('stars'),
+    instructions: 'Store the reviewer’s IP with each submission. Disabling will weaken the per-IP rate limiter.'|t('stars'),
+    id: 'captureIpAddress',
+    name: 'captureIpAddress',
+    on: settings.captureIpAddress,
+    warning: configWarning('captureIpAddress'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Capture User Agent'|t('stars'),
+    instructions: 'Store the reviewer’s browser user-agent string with each submission.'|t('stars'),
+    id: 'captureUserAgent',
+    name: 'captureUserAgent',
+    on: settings.captureUserAgent,
+    warning: configWarning('captureUserAgent'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Capture Referrer'|t('stars'),
+    instructions: 'Store the page URL the reviewer submitted from.'|t('stars'),
+    id: 'captureReferrer',
+    name: 'captureReferrer',
+    on: settings.captureReferrer,
+    warning: configWarning('captureReferrer'),
+}) }}
+
+<hr>
+
 {# ── Schema.org ── #}
 <h2>{{ 'Schema.org'|t('stars') }}</h2>
 

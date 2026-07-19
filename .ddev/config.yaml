@@ -1,0 +1,22 @@
+name: craft-stars
+type: php
+docroot: ""
+php_version: "8.2"
+webserver_type: nginx-fpm
+database:
+  type: mariadb
+  version: "10.11"
+composer_version: "2"
+# These environment variables are consumed only by the plugin's test harness
+# (tests/_bootstrap.php + craft\test\Craft). There is no full Craft app in this repo.
+web_environment:
+  - CRAFT_DB_DRIVER=mysql
+  - CRAFT_DB_DSN=mysql:host=db;port=3306;dbname=db
+  - CRAFT_DB_SERVER=db
+  - CRAFT_DB_PORT=3306
+  - CRAFT_DB_DATABASE=db
+  - CRAFT_DB_USER=db
+  - CRAFT_DB_PASSWORD=db
+  - CRAFT_DB_SCHEMA=public
+  - CRAFT_DB_TABLE_PREFIX=
+  - CRAFT_SECURITY_KEY=test-security-key-craft-stars-plugin

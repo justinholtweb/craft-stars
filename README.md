@@ -197,6 +197,11 @@ return [
     'rateLimitMinutes' => 1440,         // Per IP+entry. 0 = disabled
     'minSubmissionTime' => 3,           // Seconds. 0 = disabled
 
+    // Privacy — disable to avoid storing each piece of metadata
+    'captureIpAddress' => true,         // Required for the per-IP rate limiter
+    'captureUserAgent' => true,
+    'captureReferrer' => true,
+
     // Schema.org
     'enableSchemaOrg' => true,
     'schemaItemType' => 'Product',      // Product, LocalBusiness, Book, etc.
@@ -235,6 +240,22 @@ Event::on(Review::class, Review::EVENT_AFTER_SAVE, function(ModelEvent $event) {
     // Your logic here
 });
 ```
+
+## Development
+
+The plugin ships with a test suite built on Codeception and Craft's test
+framework. [DDEV](https://ddev.com) provides PHP and a database (no local PHP
+install required):
+
+```bash
+ddev start
+ddev composer install
+ddev exec vendor/bin/codecept build
+ddev exec vendor/bin/codecept run unit
+```
+
+The suite boots a real Craft application, installs the plugin (running its
+migration), and exercises the services against a live database.
 
 ## Roadmap
 

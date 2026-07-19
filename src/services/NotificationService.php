@@ -54,9 +54,22 @@ class NotificationService extends Component
                     ->setTextBody($textBody)
                     ->send();
             } catch (\Throwable $e) {
-                Craft::error("Failed to send review notification to {$email}: " . $e->getMessage(), 'stars');
+                Craft::error("Failed to send review notification to {$this->_maskEmail($email)}: " . $e->getMessage(), 'stars');
             }
         }
+    }
+
+    /**
+     * Mask an email for logs: "alice@example.com" -> "a***@example.com".
+     */
+    private function _maskEmail(string $email): string
+    {
+        $at = strpos($email, '@');
+        if ($at === false || $at === 0) {
+            return '***';
+        }
+
+        return substr($email, 0, 1) . '***' . substr($email, $at);
     }
 
     private function _getNotificationEmails(): array
