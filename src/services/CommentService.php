@@ -37,6 +37,45 @@ class CommentService extends Component
     }
 
     /**
+     * Get approved comments for an entry as a nested tree: an array of
+     * top-level comments, each with its replies attached to `->children`
+     * (recursively). Built from a single flat query.
+     *
+     * @return Comment[]
+     */
+    public function getCommentTree(Entry|int $entry): array
+    {
+        $entryId = $entry instanceof Entry ? $entry->id : $entry;
+
+        /** @var Comment[] $all */
+        $all = Comment::find()
+            ->entryId($entryId)
+            ->commentStatus('approved')
+            ->orderBy(['dateCreated' => SORT_ASC])
+            ->all();
+
+        // Index by id and reset any stale children.
+        $byId = [];
+        foreach ($all as $comment) {
+            $comment->children = [];
+            $byId[$comment->id] = $comment;
+        }
+
+        // Attach each comment to its parent, or collect it as a root.
+        $roots = [];
+        foreach ($all as $comment) {
+            if ($comment->parentId !== null && isset($byId[$comment->parentId])) {
+                $byId[$comment->parentId]->children[] = $comment;
+            } else {
+                // Top-level, or a reply whose parent isn't approved/visible.
+                $roots[] = $comment;
+            }
+        }
+
+        return $roots;
+    }
+
+    /**
      * Get approved replies to a comment, oldest first.
      */
     public function getReplies(Comment|int $comment): array

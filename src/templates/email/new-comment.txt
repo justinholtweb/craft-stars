@@ -1,0 +1,16 @@
+{{ 'New Comment Submitted'|t('stars') }}
+================================
+
+{{ 'Entry'|t('stars') }}: {% if entry %}{{ entry.title }}{% else %}{{ 'Unknown'|t('stars') }}{% endif %}
+
+{{ 'Author'|t('stars') }}: {{ comment.authorName }}
+{% if comment.authorEmail %}{{ 'Email'|t('stars') }}: {{ comment.authorEmail }}
+{% endif %}{% if comment.parentId %}{{ 'This is a reply to another comment.'|t('stars') }}
+{% endif %}
+{{ 'Comment'|t('stars') }}:
+{{ comment.body }}
+
+{{ 'Status'|t('stars') }}: {{ comment.commentStatus|capitalize }}
+{% if comment.id %}
+{{ 'View in Control Panel'|t('stars') }}: {{ cpUrl('stars/comments/' ~ comment.id) }}
+{% endif %}

@@ -3,6 +3,7 @@
 namespace justinholtweb\stars\elements;
 
 use Craft;
+use craft\db\Query;
 use craft\elements\Entry;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\Cp;
@@ -14,6 +15,7 @@ use justinholtweb\stars\elements\actions\MarkAsSpam;
 use justinholtweb\stars\elements\actions\Reject;
 use justinholtweb\stars\elements\base\ModeratedElement;
 use justinholtweb\stars\elements\db\CommentQuery;
+use justinholtweb\stars\Plugin;
 
 class Comment extends ModeratedElement
 {
@@ -24,6 +26,14 @@ class Comment extends ModeratedElement
     public ?string $authorEmail = null;
     public ?string $body = null;
     public string $commentStatus = 'pending';
+
+    /**
+     * Transient nested replies, populated by CommentService::getCommentTree().
+     * Not persisted.
+     *
+     * @var Comment[]
+     */
+    public array $children = [];
 
     public static function displayName(): string
     {
@@ -298,6 +308,53 @@ class Comment extends ModeratedElement
         }
 
         return $metadata;
+    }
+
+    /**
+     * The nesting depth of this comment. Top-level comments are depth 1, a
+     * reply is depth 2, and so on.
+     */
+    public function getDepth(): int
+    {
+        $depth = 1;
+        $parentId = $this->parentId;
+        $guard = 0;
+
+        while ($parentId !== null && $guard++ < 50) {
+            $depth++;
+            $next = (new Query())
+                ->select(['parentId'])
+                ->from('{{%stars_comments}}')
+                ->where(['id' => $parentId])
+                ->scalar();
+            $parentId = ($next !== false && $next !== null) ? (int)$next : null;
+        }
+
+        return $depth;
+    }
+
+    /**
+     * Enforce the configured maximum nesting depth: a reply whose parent is
+     * already at the limit is promoted to sit alongside that parent instead.
+     */
+    public function beforeSave(bool $isNew): bool
+    {
+        if ($this->parentId !== null) {
+            $maxDepth = Plugin::getInstance()->getSettings()->maxCommentDepth;
+
+            /** @var Comment|null $parent */
+            $parent = static::find()->id($this->parentId)->status(null)->one();
+
+            if ($parent === null) {
+                // Parent no longer exists — make this a top-level comment.
+                $this->parentId = null;
+            } elseif ($parent->getDepth() >= $maxDepth) {
+                // Parent is already at max depth — attach to the parent's level.
+                $this->parentId = $parent->parentId;
+            }
+        }
+
+        return parent::beforeSave($isNew);
     }
 
     protected function customTableName(): string

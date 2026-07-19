@@ -78,6 +78,12 @@ class CommentsController extends Controller
             return null;
         }
 
+        // Notify moderators, and the parent author if this is an (approved) reply.
+        Plugin::getInstance()->notifications->sendNewCommentNotification($comment);
+        if ($comment->parentId) {
+            Plugin::getInstance()->notifications->sendReplyNotification($comment);
+        }
+
         if ($request->getAcceptsJson()) {
             return $this->asJson([
                 'success' => true,

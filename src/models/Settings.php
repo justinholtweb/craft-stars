@@ -44,6 +44,7 @@ class Settings extends Model
     public bool $enableComments = true;
     public bool $commentsRequireLogin = false;
     public bool $commentsAllowAnonymous = false;
+    public int $maxCommentDepth = 2;
 
     public function defineRules(): array
     {
@@ -52,6 +53,7 @@ class Settings extends Model
             [['maxRating'], 'integer', 'min' => 1, 'max' => 10],
             [['rateLimitMinutes'], 'integer', 'min' => 0],
             [['minSubmissionTime'], 'integer', 'min' => 0],
+            [['maxCommentDepth'], 'integer', 'min' => 1, 'max' => 10],
             [['recaptchaSiteKey', 'recaptchaSecretKey', 'notificationEmails', 'schemaItemType'], 'string'],
             [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer', 'enableComments', 'commentsRequireLogin', 'commentsAllowAnonymous'], 'boolean'],
         ];

@@ -1,0 +1,17 @@
+<h2>{{ 'You have a new reply'|t('stars') }}</h2>
+
+<p>{{ 'Hi {name}, someone replied to your comment'|t('stars', { name: parent.authorName }) }}{% if entry %} {{ 'on {title}'|t('stars', { title: entry.title }) }}{% endif %}:</p>
+
+<blockquote style="border-left: 3px solid #ccc; margin: 0; padding-left: 12px; color: #555;">
+    {{ parent.body }}
+</blockquote>
+
+<p><strong>{{ reply.authorName }}</strong> {{ 'wrote'|t('stars') }}:</p>
+
+<blockquote style="border-left: 3px solid #2b7; margin: 0; padding-left: 12px;">
+    {{ reply.body }}
+</blockquote>
+
+{% if entry and entry.url %}
+<p><a href="{{ entry.url }}">{{ 'View the conversation'|t('stars') }}</a></p>
+{% endif %}

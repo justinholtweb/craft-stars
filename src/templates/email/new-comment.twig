@@ -1,0 +1,36 @@
+<h2>{{ 'New Comment Submitted'|t('stars') }}</h2>
+
+<table cellpadding="8" cellspacing="0" border="0" style="border-collapse: collapse;">
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Entry'|t('stars') }}:</td>
+        <td>{% if entry %}{{ entry.title }}{% else %}{{ 'Unknown'|t('stars') }}{% endif %}</td>
+    </tr>
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Author'|t('stars') }}:</td>
+        <td>{{ comment.authorName }}</td>
+    </tr>
+    {% if comment.authorEmail %}
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Email'|t('stars') }}:</td>
+        <td><a href="mailto:{{ comment.authorEmail }}">{{ comment.authorEmail }}</a></td>
+    </tr>
+    {% endif %}
+    {% if comment.parentId %}
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Reply'|t('stars') }}:</td>
+        <td>{{ 'This is a reply to another comment.'|t('stars') }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Comment'|t('stars') }}:</td>
+        <td>{{ comment.body }}</td>
+    </tr>
+    <tr>
+        <td style="font-weight: bold; vertical-align: top;">{{ 'Status'|t('stars') }}:</td>
+        <td>{{ comment.commentStatus|capitalize }}</td>
+    </tr>
+</table>
+
+{% if comment.id %}
+<p><a href="{{ cpUrl('stars/comments/' ~ comment.id) }}">{{ 'View in Control Panel'|t('stars') }}</a></p>
+{% endif %}

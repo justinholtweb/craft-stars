@@ -34,6 +34,17 @@ class CommentsVariable
     }
 
     /**
+     * Approved comments for an entry as a nested tree (each comment exposes
+     * its replies via `.children`).
+     *
+     * @return Comment[]
+     */
+    public function tree(Entry|int $entry): array
+    {
+        return Plugin::getInstance()->comments->getCommentTree($entry);
+    }
+
+    /**
      * Approved replies to a comment, oldest first.
      */
     public function replies(Comment|int $comment): array

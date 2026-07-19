@@ -82,4 +82,17 @@ return [
     'You must be logged in to comment.' => 'You must be logged in to comment.',
     'Your submission was flagged as spam.' => 'Your submission was flagged as spam.',
     'Your name is required.' => 'Your name is required.',
+    'Max Comment Depth' => 'Max Comment Depth',
+
+    // Comment emails
+    'New Comment Submitted' => 'New Comment Submitted',
+    'New Comment: {entryTitle}' => 'New Comment: {entryTitle}',
+    'Reply' => 'Reply',
+    'This is a reply to another comment.' => 'This is a reply to another comment.',
+    'New reply to your comment' => 'New reply to your comment',
+    'You have a new reply' => 'You have a new reply',
+    'Hi {name}, someone replied to your comment' => 'Hi {name}, someone replied to your comment',
+    'on {title}' => 'on {title}',
+    'wrote' => 'wrote',
+    'View the conversation' => 'View the conversation',
 ];

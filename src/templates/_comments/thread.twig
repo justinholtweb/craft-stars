@@ -1,0 +1,25 @@
+{#
+  Recursive comment-thread macro.
+
+  Usage in a front-end template:
+
+    {% import 'stars/_comments/thread' as commentThread %}
+    {{ commentThread.thread(craft.comments.tree(entry)) }}
+#}
+{% macro thread(comments) %}
+    {% import _self as macros %}
+    <ul class="stars-comments">
+        {% for comment in comments %}
+            <li class="stars-comment" id="comment-{{ comment.id }}">
+                <div class="stars-comment__meta">
+                    <strong class="stars-comment__author">{{ comment.authorName }}</strong>
+                    <time datetime="{{ comment.dateCreated|date('c') }}">{{ comment.dateCreated|date('M j, Y') }}</time>
+                </div>
+                <div class="stars-comment__body">{{ comment.body|nl2br }}</div>
+                {% if comment.children|length %}
+                    {{ macros.thread(comment.children) }}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}

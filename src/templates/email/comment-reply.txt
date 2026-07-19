@@ -1,0 +1,13 @@
+{{ 'You have a new reply'|t('stars') }}
+================================
+
+{{ 'Hi {name}, someone replied to your comment'|t('stars', { name: parent.authorName }) }}{% if entry %} {{ 'on {title}'|t('stars', { title: entry.title }) }}{% endif %}:
+
+> {{ parent.body }}
+
+{{ reply.authorName }} {{ 'wrote'|t('stars') }}:
+
+> {{ reply.body }}
+{% if entry and entry.url %}
+{{ 'View the conversation'|t('stars') }}: {{ entry.url }}
+{% endif %}

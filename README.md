@@ -202,14 +202,24 @@ moderation, spam protection, and login-gating as reviews.
 
 ### Displaying Comments
 
+The simplest way to render a full nested thread is the bundled recursive macro,
+fed by `craft.comments.tree(entry)`:
+
 ```twig
-{% for comment in craft.comments.topLevel(entry).all() %}
+{% import 'stars/_comments/thread' as commentThread %}
+{{ commentThread.thread(craft.comments.tree(entry)) }}
+```
+
+Or build it yourself — each comment in the tree exposes its replies via
+`.children`:
+
+```twig
+{% for comment in craft.comments.tree(entry) %}
     <article class="comment">
         <strong>{{ comment.authorName }}</strong>
-        <time datetime="{{ comment.dateCreated|date('Y-m-d') }}">{{ comment.dateCreated|date('M j, Y') }}</time>
         <p>{{ comment.body }}</p>
 
-        {% for reply in craft.comments.replies(comment) %}
+        {% for reply in comment.children %}
             <article class="comment comment--reply">
                 <strong>{{ reply.authorName }}</strong>
                 <p>{{ reply.body }}</p>
@@ -219,10 +229,14 @@ moderation, spam protection, and login-gating as reviews.
 {% endfor %}
 ```
 
+Reply nesting is capped by the **Max Comment Depth** setting; deeper replies are
+automatically attached at the deepest allowed level.
+
 ### `craft.comments` API
 
 | Method | Returns | Description |
 |--------|---------|-------------|
+| `craft.comments.tree(entry)` | `Comment[]` | Approved comments as a nested tree (replies on `.children`) |
 | `craft.comments.forEntry(entry)` | `CommentQuery` | Approved comments for an entry, oldest first |
 | `craft.comments.topLevel(entry)` | `CommentQuery` | Approved top-level comments (no replies) |
 | `craft.comments.replies(comment)` | `array` | Approved replies to a comment |
@@ -269,6 +283,12 @@ return [
     'enablePros' => true,
     'enableCons' => true,
     'enableAdminResponse' => true,
+
+    // Comments
+    'enableComments' => true,
+    'commentsRequireLogin' => false,
+    'commentsAllowAnonymous' => false,
+    'maxCommentDepth' => 2,             // 1 = no replies, 2 = one level, ...
 ];
 ```
 

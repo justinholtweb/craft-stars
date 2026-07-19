@@ -281,3 +281,15 @@
     on: settings.commentsAllowAnonymous,
     warning: configWarning('commentsAllowAnonymous'),
 }) }}
+
+{{ forms.textField({
+    label: 'Max Comment Depth'|t('stars'),
+    instructions: 'How deep replies can nest. 1 = no replies, 2 = one level of replies, and so on.'|t('stars'),
+    id: 'maxCommentDepth',
+    name: 'maxCommentDepth',
+    type: 'number',
+    min: 1,
+    max: 10,
+    value: settings.maxCommentDepth,
+    warning: configWarning('maxCommentDepth'),
+}) }}
