@@ -1,0 +1,19 @@
+actor: UnitTester
+bootstrap: false
+modules:
+    enabled:
+        - Asserts
+        - \craft\test\Craft:
+            configFile: "tests/_craft/config/test.php"
+            entryUrl: "https://craft-stars.ddev.site/index.php"
+            projectConfig:
+                reset: false
+            migrations: []
+            plugins:
+                - class: justinholtweb\stars\Plugin
+                  handle: stars
+            cleanup: true
+            transaction: true
+            dbSetup:
+                clean: true
+                setupCraft: true

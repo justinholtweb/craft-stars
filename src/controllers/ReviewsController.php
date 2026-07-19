@@ -70,10 +70,10 @@ class ReviewsController extends Controller
             $review->cons = $cons;
         }
 
-        // Capture metadata
-        $review->ipAddress = $request->getUserIP();
-        $review->userAgent = substr($request->getUserAgent() ?? '', 0, 512);
-        $review->submissionUrl = $request->getReferrer();
+        // Capture metadata — each is independently togglable for GDPR-style data minimization.
+        $review->ipAddress = $settings->captureIpAddress ? $request->getUserIP() : null;
+        $review->userAgent = $settings->captureUserAgent ? substr($request->getUserAgent() ?? '', 0, 512) : null;
+        $review->submissionUrl = $settings->captureReferrer ? $request->getReferrer() : null;
 
         // Anonymous check
         if (!$settings->allowAnonymous && empty($review->reviewerName)) {

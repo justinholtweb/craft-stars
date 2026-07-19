@@ -1,0 +1,328 @@
+<?php
+
+namespace justinholtweb\stars\elements;
+
+use Craft;
+use craft\elements\Entry;
+use craft\elements\db\ElementQueryInterface;
+use craft\helpers\Cp;
+use craft\helpers\Html;
+use craft\helpers\StringHelper;
+use craft\helpers\UrlHelper;
+use justinholtweb\stars\elements\actions\Approve;
+use justinholtweb\stars\elements\actions\MarkAsSpam;
+use justinholtweb\stars\elements\actions\Reject;
+use justinholtweb\stars\elements\base\ModeratedElement;
+use justinholtweb\stars\elements\db\CommentQuery;
+
+class Comment extends ModeratedElement
+{
+    // Properties (entryId, ipAddress, userAgent, submissionUrl live on ModeratedElement)
+    public ?int $parentId = null;
+    public ?int $authorUserId = null;
+    public string $authorName = '';
+    public ?string $authorEmail = null;
+    public ?string $body = null;
+    public string $commentStatus = 'pending';
+
+    public static function displayName(): string
+    {
+        return Craft::t('stars', 'Comment');
+    }
+
+    public static function pluralDisplayName(): string
+    {
+        return Craft::t('stars', 'Comments');
+    }
+
+    public static function lowerDisplayName(): string
+    {
+        return Craft::t('stars', 'comment');
+    }
+
+    public static function pluralLowerDisplayName(): string
+    {
+        return Craft::t('stars', 'comments');
+    }
+
+    public static function statusAttribute(): string
+    {
+        return 'commentStatus';
+    }
+
+    public static function find(): ElementQueryInterface
+    {
+        return new CommentQuery(static::class);
+    }
+
+    protected static function defineSources(string $context): array
+    {
+        return [
+            [
+                'key' => '*',
+                'label' => Craft::t('stars', 'All Comments'),
+                'defaultSort' => ['dateCreated', 'desc'],
+            ],
+            [
+                'key' => 'pending',
+                'label' => Craft::t('stars', 'Pending'),
+                'criteria' => ['commentStatus' => 'pending'],
+                'defaultSort' => ['dateCreated', 'desc'],
+                'badgeCount' => self::_countByStatus('pending'),
+            ],
+            [
+                'key' => 'approved',
+                'label' => Craft::t('stars', 'Approved'),
+                'criteria' => ['commentStatus' => 'approved'],
+                'defaultSort' => ['dateCreated', 'desc'],
+            ],
+            [
+                'key' => 'rejected',
+                'label' => Craft::t('stars', 'Rejected'),
+                'criteria' => ['commentStatus' => 'rejected'],
+                'defaultSort' => ['dateCreated', 'desc'],
+            ],
+            [
+                'key' => 'spam',
+                'label' => Craft::t('stars', 'Spam'),
+                'criteria' => ['commentStatus' => 'spam'],
+                'defaultSort' => ['dateCreated', 'desc'],
+            ],
+        ];
+    }
+
+    protected static function defineActions(string $source): array
+    {
+        return [
+            Approve::class,
+            Reject::class,
+            MarkAsSpam::class,
+            [
+                'type' => \craft\elements\actions\Delete::class,
+                'confirmationMessage' => Craft::t('stars', 'Are you sure you want to delete the selected comments?'),
+                'successMessage' => Craft::t('stars', 'Comments deleted.'),
+            ],
+        ];
+    }
+
+    protected static function defineSortOptions(): array
+    {
+        return [
+            'dateCreated' => Craft::t('stars', 'Date Created'),
+            'authorName' => Craft::t('stars', 'Author Name'),
+        ];
+    }
+
+    protected static function defineTableAttributes(): array
+    {
+        return [
+            'authorName' => ['label' => Craft::t('stars', 'Author')],
+            'entryId' => ['label' => Craft::t('stars', 'Entry')],
+            'body' => ['label' => Craft::t('stars', 'Comment')],
+            'commentStatus' => ['label' => Craft::t('stars', 'Status')],
+            'authorEmail' => ['label' => Craft::t('stars', 'Email')],
+            'dateCreated' => ['label' => Craft::t('stars', 'Date Created')],
+        ];
+    }
+
+    protected static function defineDefaultTableAttributes(string $source): array
+    {
+        return ['authorName', 'entryId', 'body', 'commentStatus', 'dateCreated'];
+    }
+
+    protected static function defineSearchableAttributes(): array
+    {
+        return ['authorName', 'authorEmail', 'body'];
+    }
+
+    protected function tableAttributeHtml(string $attribute): string
+    {
+        switch ($attribute) {
+            case 'entryId':
+                $entry = $this->getEntry();
+                if ($entry) {
+                    return Cp::elementChipHtml($entry);
+                }
+                return '<span class="light">—</span>';
+            case 'commentStatus':
+                $statuses = static::statuses();
+                $statusInfo = $statuses[$this->commentStatus] ?? null;
+                if ($statusInfo) {
+                    return '<span class="status ' . $statusInfo['color'] . '"></span>' . $statusInfo['label'];
+                }
+                return $this->commentStatus;
+            case 'body':
+                return Html::encode(StringHelper::truncate($this->body ?? '', 60));
+            default:
+                return parent::tableAttributeHtml($attribute);
+        }
+    }
+
+    public function getUiLabel(): string
+    {
+        return Craft::t('stars', 'Comment by {name}', [
+            'name' => $this->authorName ?: Craft::t('stars', 'Anonymous'),
+        ]);
+    }
+
+    public function getCpEditUrl(): ?string
+    {
+        return UrlHelper::cpUrl("stars/comments/{$this->id}");
+    }
+
+    public function canView(\craft\elements\User $user): bool
+    {
+        return $user->admin || $user->can('stars:viewComments');
+    }
+
+    public function canSave(\craft\elements\User $user): bool
+    {
+        return $user->admin || $user->can('stars:manageComments');
+    }
+
+    public function canDelete(\craft\elements\User $user): bool
+    {
+        return $user->admin || $user->can('stars:deleteComments');
+    }
+
+    public function canCreateDrafts(\craft\elements\User $user): bool
+    {
+        return false;
+    }
+
+    public function safeAttributes(): array
+    {
+        // entryId, ipAddress, userAgent, submissionUrl and commentStatus are
+        // contributed by ModeratedElement::safeAttributes().
+        return array_merge(parent::safeAttributes(), [
+            'parentId',
+            'authorUserId',
+            'authorName',
+            'authorEmail',
+            'body',
+        ]);
+    }
+
+    protected function defineRules(): array
+    {
+        $rules = parent::defineRules();
+
+        $rules[] = [['authorName'], 'required'];
+        $rules[] = [['authorName'], 'string', 'max' => 255];
+        $rules[] = [['authorEmail'], 'email'];
+        $rules[] = [['body'], 'required'];
+        $rules[] = [['parentId', 'authorUserId'], 'integer'];
+        $rules[] = [['commentStatus'], 'in', 'range' => ['pending', 'approved', 'rejected', 'spam']];
+
+        return $rules;
+    }
+
+    public function metaFieldsHtml(bool $static): string
+    {
+        $fields = [];
+
+        // Status selector
+        $fields[] = Cp::selectFieldHtml([
+            'label' => Craft::t('stars', 'Status'),
+            'id' => 'commentStatus',
+            'name' => 'commentStatus',
+            'value' => $this->commentStatus,
+            'options' => [
+                ['label' => Craft::t('stars', 'Pending'), 'value' => 'pending'],
+                ['label' => Craft::t('stars', 'Approved'), 'value' => 'approved'],
+                ['label' => Craft::t('stars', 'Rejected'), 'value' => 'rejected'],
+                ['label' => Craft::t('stars', 'Spam'), 'value' => 'spam'],
+            ],
+        ]);
+
+        // Entry selector
+        $fields[] = Cp::elementSelectFieldHtml([
+            'label' => Craft::t('stars', 'Entry'),
+            'id' => 'entryId',
+            'name' => 'entryId',
+            'elementType' => Entry::class,
+            'elements' => $this->getEntry() ? [$this->getEntry()] : [],
+            'limit' => 1,
+            'single' => true,
+        ]);
+
+        // Author name
+        $fields[] = Cp::textFieldHtml([
+            'label' => Craft::t('stars', 'Author Name'),
+            'id' => 'authorName',
+            'name' => 'authorName',
+            'value' => $this->authorName,
+            'required' => true,
+        ]);
+
+        // Author email
+        $fields[] = Cp::textFieldHtml([
+            'label' => Craft::t('stars', 'Author Email'),
+            'id' => 'authorEmail',
+            'name' => 'authorEmail',
+            'value' => $this->authorEmail,
+            'type' => 'email',
+        ]);
+
+        // Body
+        $fields[] = Cp::textareaFieldHtml([
+            'label' => Craft::t('stars', 'Comment'),
+            'id' => 'body',
+            'name' => 'body',
+            'value' => $this->body,
+            'rows' => 5,
+            'required' => true,
+        ]);
+
+        return implode("\n", $fields) . parent::metaFieldsHtml($static);
+    }
+
+    protected function metadata(): array
+    {
+        $metadata = [];
+
+        if ($this->authorEmail) {
+            $metadata[Craft::t('stars', 'Email')] = Html::mailto($this->authorEmail);
+        }
+
+        if ($this->ipAddress) {
+            $metadata[Craft::t('stars', 'IP Address')] = $this->ipAddress;
+        }
+
+        if ($this->submissionUrl) {
+            $metadata[Craft::t('stars', 'Submission URL')] = Html::a(
+                Html::encode(StringHelper::truncate($this->submissionUrl, 50)),
+                $this->submissionUrl,
+                ['target' => '_blank', 'rel' => 'noopener']
+            );
+        }
+
+        return $metadata;
+    }
+
+    protected function customTableName(): string
+    {
+        return '{{%stars_comments}}';
+    }
+
+    protected function customAttributes(): array
+    {
+        return [
+            'entryId' => $this->entryId,
+            'parentId' => $this->parentId,
+            'authorUserId' => $this->authorUserId,
+            'authorName' => $this->authorName,
+            'authorEmail' => $this->authorEmail,
+            'body' => $this->body,
+            'commentStatus' => $this->commentStatus,
+            'ipAddress' => $this->ipAddress,
+            'userAgent' => $this->userAgent,
+            'submissionUrl' => $this->submissionUrl,
+        ];
+    }
+
+    private static function _countByStatus(string $status): int
+    {
+        return static::find()->commentStatus($status)->count();
+    }
+}

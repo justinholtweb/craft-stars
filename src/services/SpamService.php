@@ -106,7 +106,8 @@ class SpamService extends Component
             $query->andWhere(['entryId' => $entryId]);
         }
 
-        return $query->count() === 0;
+        // count() can return a numeric string; cast before comparing.
+        return (int)$query->count() === 0;
     }
 
     /**

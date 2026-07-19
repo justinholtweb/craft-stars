@@ -31,11 +31,17 @@ class ReviewService extends Component
     {
         $entryId = $entry instanceof Entry ? $entry->id : $entry;
 
-        $result = Review::find()
-            ->entryId($entryId)
-            ->reviewStatus('approved')
-            ->select(['AVG([[stars_reviews.rating]]) as avg'])
-            ->scalar();
+        // Use a raw query rather than the element query: ReviewQuery::beforePrepare()
+        // overrides the SELECT list, which would clobber an AVG() aggregate.
+        $result = (new \craft\db\Query())
+            ->from('{{%stars_reviews}}')
+            ->innerJoin('{{%elements}}', '[[elements.id]] = [[stars_reviews.id]]')
+            ->where([
+                'stars_reviews.entryId' => $entryId,
+                'stars_reviews.reviewStatus' => 'approved',
+                'elements.dateDeleted' => null,
+            ])
+            ->average('[[stars_reviews.rating]]');
 
         return $result ? round((float)$result, 1) : 0.0;
     }

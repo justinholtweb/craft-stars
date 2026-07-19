@@ -3,24 +3,23 @@
 namespace justinholtweb\stars\elements;
 
 use Craft;
-use craft\base\Element;
 use craft\elements\Entry;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\Cp;
 use craft\helpers\Db;
 use craft\helpers\Html;
 use craft\helpers\UrlHelper;
-use justinholtweb\stars\elements\actions\ApproveReviews;
+use justinholtweb\stars\elements\actions\Approve;
 use justinholtweb\stars\elements\actions\MarkAsSpam;
-use justinholtweb\stars\elements\actions\RejectReviews;
+use justinholtweb\stars\elements\actions\Reject;
+use justinholtweb\stars\elements\base\ModeratedElement;
 use justinholtweb\stars\elements\db\ReviewQuery;
 use justinholtweb\stars\Plugin;
-use justinholtweb\stars\records\ReviewRecord;
 
-class Review extends Element
+class Review extends ModeratedElement
 {
-    // Properties
-    public ?int $entryId = null;
+    // Properties (shared columns — entryId, ipAddress, userAgent,
+    // submissionUrl — live on ModeratedElement)
     public int $rating = 5;
     public ?string $reviewText = null;
     public string $reviewerName = '';
@@ -29,13 +28,7 @@ class Review extends Element
     public ?string $cons = null;
     public ?string $adminResponse = null;
     public ?string $adminResponseDate = null;
-    public ?string $ipAddress = null;
-    public ?string $userAgent = null;
-    public ?string $submissionUrl = null;
     public string $reviewStatus = 'pending';
-
-    // Cached entry element
-    private ?Entry $_entry = null;
 
     public static function displayName(): string
     {
@@ -57,44 +50,14 @@ class Review extends Element
         return Craft::t('stars', 'reviews');
     }
 
-    public static function hasStatuses(): bool
+    public static function statusAttribute(): string
     {
-        return true;
-    }
-
-    public static function statuses(): array
-    {
-        return [
-            'pending' => ['label' => Craft::t('stars', 'Pending'), 'color' => 'orange'],
-            'approved' => ['label' => Craft::t('stars', 'Approved'), 'color' => 'green'],
-            'rejected' => ['label' => Craft::t('stars', 'Rejected'), 'color' => 'red'],
-            'spam' => ['label' => Craft::t('stars', 'Spam'), 'color' => 'light'],
-        ];
-    }
-
-    public function getStatus(): ?string
-    {
-        return $this->reviewStatus;
+        return 'reviewStatus';
     }
 
     public static function find(): ElementQueryInterface
     {
         return new ReviewQuery(static::class);
-    }
-
-    public static function hasTitles(): bool
-    {
-        return false;
-    }
-
-    public static function hasUris(): bool
-    {
-        return false;
-    }
-
-    public static function isLocalized(): bool
-    {
-        return false;
     }
 
     protected static function defineSources(string $context): array
@@ -137,8 +100,8 @@ class Review extends Element
     {
         $actions = [];
 
-        $actions[] = ApproveReviews::class;
-        $actions[] = RejectReviews::class;
+        $actions[] = Approve::class;
+        $actions[] = Reject::class;
         $actions[] = MarkAsSpam::class;
 
         $actions[] = [
@@ -211,26 +174,6 @@ class Review extends Element
         return Craft::t('stars', 'Review by {name}', ['name' => $this->reviewerName ?: Craft::t('stars', 'Anonymous')]);
     }
 
-    public function getEntry(): ?Entry
-    {
-        if ($this->_entry !== null) {
-            return $this->_entry;
-        }
-
-        if ($this->entryId === null) {
-            return null;
-        }
-
-        $this->_entry = Entry::find()->id($this->entryId)->status(null)->one();
-        return $this->_entry;
-    }
-
-    public function setEntry(?Entry $entry): void
-    {
-        $this->_entry = $entry;
-        $this->entryId = $entry?->id;
-    }
-
     public function getProsArray(): array
     {
         if (empty($this->pros)) {
@@ -274,20 +217,11 @@ class Review extends Element
         return false;
     }
 
-    public function setAttributes($values, $safeOnly = true): void
-    {
-        // Handle entryId from element select (posted as array)
-        if (isset($values['entryId']) && is_array($values['entryId'])) {
-            $values['entryId'] = reset($values['entryId']) ?: null;
-        }
-        parent::setAttributes($values, $safeOnly);
-    }
-
     public function safeAttributes(): array
     {
-        $attributes = parent::safeAttributes();
-        return array_merge($attributes, [
-            'entryId',
+        // entryId, ipAddress, userAgent, submissionUrl and reviewStatus are
+        // contributed by ModeratedElement::safeAttributes().
+        return array_merge(parent::safeAttributes(), [
             'rating',
             'reviewText',
             'reviewerName',
@@ -296,10 +230,6 @@ class Review extends Element
             'cons',
             'adminResponse',
             'adminResponseDate',
-            'ipAddress',
-            'userAgent',
-            'submissionUrl',
-            'reviewStatus',
         ]);
     }
 
@@ -456,51 +386,28 @@ class Review extends Element
         return $metadata;
     }
 
-    public function afterSave(bool $isNew): void
+    protected function customTableName(): string
     {
-        if ($isNew) {
-            \Craft::$app->db->createCommand()
-                ->insert('{{%stars_reviews}}', [
-                    'id' => $this->id,
-                    'entryId' => $this->entryId,
-                    'rating' => $this->rating,
-                    'reviewText' => $this->reviewText,
-                    'reviewerName' => $this->reviewerName,
-                    'reviewerEmail' => $this->reviewerEmail,
-                    'pros' => $this->pros,
-                    'cons' => $this->cons,
-                    'adminResponse' => $this->adminResponse,
-                    'adminResponseDate' => $this->adminResponseDate ? Db::prepareDateForDb($this->adminResponseDate) : null,
-                    'ipAddress' => $this->ipAddress,
-                    'userAgent' => $this->userAgent,
-                    'submissionUrl' => $this->submissionUrl,
-                    'reviewStatus' => $this->reviewStatus,
-                    'dateCreated' => Db::prepareDateForDb($this->dateCreated),
-                    'dateUpdated' => Db::prepareDateForDb($this->dateUpdated),
-                    'uid' => $this->uid,
-                ])
-                ->execute();
-        } else {
-            \Craft::$app->db->createCommand()
-                ->update('{{%stars_reviews}}', [
-                    'entryId' => $this->entryId,
-                    'rating' => $this->rating,
-                    'reviewText' => $this->reviewText,
-                    'reviewerName' => $this->reviewerName,
-                    'reviewerEmail' => $this->reviewerEmail,
-                    'pros' => $this->pros,
-                    'cons' => $this->cons,
-                    'adminResponse' => $this->adminResponse,
-                    'adminResponseDate' => $this->adminResponseDate ? Db::prepareDateForDb($this->adminResponseDate) : null,
-                    'ipAddress' => $this->ipAddress,
-                    'userAgent' => $this->userAgent,
-                    'submissionUrl' => $this->submissionUrl,
-                    'reviewStatus' => $this->reviewStatus,
-                ], ['id' => $this->id])
-                ->execute();
-        }
+        return '{{%stars_reviews}}';
+    }
 
-        parent::afterSave($isNew);
+    protected function customAttributes(): array
+    {
+        return [
+            'entryId' => $this->entryId,
+            'rating' => $this->rating,
+            'reviewText' => $this->reviewText,
+            'reviewerName' => $this->reviewerName,
+            'reviewerEmail' => $this->reviewerEmail,
+            'pros' => $this->pros,
+            'cons' => $this->cons,
+            'adminResponse' => $this->adminResponse,
+            'adminResponseDate' => $this->adminResponseDate ? Db::prepareDateForDb($this->adminResponseDate) : null,
+            'ipAddress' => $this->ipAddress,
+            'userAgent' => $this->userAgent,
+            'submissionUrl' => $this->submissionUrl,
+            'reviewStatus' => $this->reviewStatus,
+        ];
     }
 
     private function _renderStars(): string
