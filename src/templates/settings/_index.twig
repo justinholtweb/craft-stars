@@ -102,31 +102,51 @@
     warning: configWarning('enableHoneypot'),
 }) }}
 
-{{ forms.lightswitchField({
-    label: 'Enable reCAPTCHA'|t('stars'),
-    instructions: 'Use Google reCAPTCHA v3 to validate submissions.'|t('stars'),
-    id: 'enableRecaptcha',
-    name: 'enableRecaptcha',
-    on: settings.enableRecaptcha,
-    warning: configWarning('enableRecaptcha'),
+{{ forms.selectField({
+    label: 'Captcha Provider'|t('stars'),
+    instructions: 'Validate submissions with a captcha provider.'|t('stars'),
+    id: 'captchaProvider',
+    name: 'captchaProvider',
+    value: settings.captchaProvider,
+    options: [
+        { label: 'None'|t('stars'), value: 'none' },
+        { label: 'reCAPTCHA v3', value: 'recaptcha_v3' },
+        { label: 'reCAPTCHA v2', value: 'recaptcha_v2' },
+        { label: 'hCaptcha', value: 'hcaptcha' },
+        { label: 'Cloudflare Turnstile', value: 'turnstile' },
+    ],
+    warning: configWarning('captchaProvider'),
 }) }}
 
 {{ forms.autosuggestField({
-    label: 'reCAPTCHA Site Key'|t('stars'),
-    id: 'recaptchaSiteKey',
-    name: 'recaptchaSiteKey',
+    label: 'Captcha Site Key'|t('stars'),
+    id: 'captchaSiteKey',
+    name: 'captchaSiteKey',
     suggestEnvVars: true,
-    value: settings.recaptchaSiteKey,
-    warning: configWarning('recaptchaSiteKey'),
+    value: settings.captchaSiteKey,
+    warning: configWarning('captchaSiteKey'),
 }) }}
 
 {{ forms.autosuggestField({
-    label: 'reCAPTCHA Secret Key'|t('stars'),
-    id: 'recaptchaSecretKey',
-    name: 'recaptchaSecretKey',
+    label: 'Captcha Secret Key'|t('stars'),
+    id: 'captchaSecretKey',
+    name: 'captchaSecretKey',
     suggestEnvVars: true,
-    value: settings.recaptchaSecretKey,
-    warning: configWarning('recaptchaSecretKey'),
+    value: settings.captchaSecretKey,
+    warning: configWarning('captchaSecretKey'),
+}) }}
+
+{{ forms.textField({
+    label: 'reCAPTCHA v3 Threshold'|t('stars'),
+    instructions: 'Minimum score (0–1) for reCAPTCHA v3 to pass.'|t('stars'),
+    id: 'recaptchaThreshold',
+    name: 'recaptchaThreshold',
+    value: settings.recaptchaThreshold,
+    type: 'number',
+    step: '0.1',
+    min: 0,
+    max: 1,
+    warning: configWarning('recaptchaThreshold'),
 }) }}
 
 {{ forms.textField({

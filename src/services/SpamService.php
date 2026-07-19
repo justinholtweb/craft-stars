@@ -5,8 +5,8 @@ namespace justinholtweb\stars\services;
 use Craft;
 use craft\base\Component;
 use craft\db\Query;
-use craft\helpers\App;
 use justinholtweb\stars\Plugin;
+use justinholtweb\stars\services\captcha\CaptchaProviderFactory;
 
 class SpamService extends Component
 {
@@ -24,7 +24,7 @@ class SpamService extends Component
             return true;
         }
 
-        if ($settings->enableRecaptcha && !$this->validateRecaptcha()) {
+        if (!$this->validateCaptcha()) {
             return true;
         }
 
@@ -49,35 +49,28 @@ class SpamService extends Component
     }
 
     /**
-     * Validate reCAPTCHA v3 token. Returns false if validation fails.
+     * Validate the configured captcha. Returns true when no captcha is
+     * configured, or when the submitted token verifies against the provider.
+     */
+    public function validateCaptcha(): bool
+    {
+        $provider = CaptchaProviderFactory::fromSettings(Plugin::getInstance()->getSettings());
+
+        if ($provider === null) {
+            return true;
+        }
+
+        $token = (string)Craft::$app->getRequest()->getBodyParam($provider->tokenField());
+
+        return $provider->verify($token, Craft::$app->getRequest()->getUserIP());
+    }
+
+    /**
+     * @deprecated Use validateCaptcha(). Retained for backwards compatibility.
      */
     public function validateRecaptcha(): bool
     {
-        $settings = Plugin::getInstance()->getSettings();
-        $token = Craft::$app->getRequest()->getBodyParam('g-recaptcha-response');
-
-        if (empty($token)) {
-            return false;
-        }
-
-        $secretKey = App::parseEnv($settings->recaptchaSecretKey);
-
-        try {
-            $client = Craft::createGuzzleClient();
-            $response = $client->post('https://www.google.com/recaptcha/api/siteverify', [
-                'form_params' => [
-                    'secret' => $secretKey,
-                    'response' => $token,
-                    'remoteip' => Craft::$app->getRequest()->getUserIP(),
-                ],
-            ]);
-
-            $result = json_decode((string)$response->getBody(), true);
-            return !empty($result['success']) && ($result['score'] ?? 0) >= 0.5;
-        } catch (\Throwable $e) {
-            Craft::error('reCAPTCHA validation error: ' . $e->getMessage(), 'stars');
-            return false;
-        }
+        return $this->validateCaptcha();
     }
 
     /**

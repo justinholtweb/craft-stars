@@ -6,6 +6,7 @@ use craft\elements\Entry;
 use justinholtweb\stars\elements\db\ReviewQuery;
 use justinholtweb\stars\elements\Review;
 use justinholtweb\stars\Plugin;
+use justinholtweb\stars\services\captcha\CaptchaProviderFactory;
 
 class StarsVariable
 {
@@ -58,5 +59,15 @@ class StarsVariable
         }
 
         return Plugin::getInstance()->schema->generateJsonLd($entry);
+    }
+
+    /**
+     * The active captcha provider + site key for rendering the widget, or null.
+     *
+     * @return array{provider: string, siteKey: string}|null
+     */
+    public function captcha(): ?array
+    {
+        return CaptchaProviderFactory::frontendConfig(Plugin::getInstance()->getSettings());
     }
 }

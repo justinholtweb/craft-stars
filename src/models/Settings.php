@@ -20,11 +20,20 @@ class Settings extends Model
 
     // Anti-Spam
     public bool $enableHoneypot = true;
+    public int $rateLimitMinutes = 1440;
+    public int $minSubmissionTime = 3;
+
+    // Captcha
+    public string $captchaProvider = 'none'; // none | recaptcha_v3 | recaptcha_v2 | hcaptcha | turnstile
+    public string $captchaSiteKey = '';
+    public string $captchaSecretKey = '';
+    public float $recaptchaThreshold = 0.5;
+
+    // Legacy reCAPTCHA settings (kept for backwards compatibility; superseded by
+    // the captcha* settings above).
     public bool $enableRecaptcha = false;
     public string $recaptchaSiteKey = '';
     public string $recaptchaSecretKey = '';
-    public int $rateLimitMinutes = 1440;
-    public int $minSubmissionTime = 3;
 
     // Privacy
     public bool $captureIpAddress = true;
@@ -54,7 +63,9 @@ class Settings extends Model
             [['rateLimitMinutes'], 'integer', 'min' => 0],
             [['minSubmissionTime'], 'integer', 'min' => 0],
             [['maxCommentDepth'], 'integer', 'min' => 1, 'max' => 10],
-            [['recaptchaSiteKey', 'recaptchaSecretKey', 'notificationEmails', 'schemaItemType'], 'string'],
+            [['captchaProvider'], 'in', 'range' => ['none', 'recaptcha_v3', 'recaptcha_v2', 'hcaptcha', 'turnstile']],
+            [['recaptchaThreshold'], 'number', 'min' => 0, 'max' => 1],
+            [['captchaSiteKey', 'captchaSecretKey', 'recaptchaSiteKey', 'recaptchaSecretKey', 'notificationEmails', 'schemaItemType'], 'string'],
             [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer', 'enableComments', 'commentsRequireLogin', 'commentsAllowAnonymous'], 'boolean'],
         ];
     }
