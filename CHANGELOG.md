@@ -1,12 +1,16 @@
 # Changelog
 
-## 6.0.0 - 2026-07-19
+## 5.0.0 - 2026-07-19
+
+First public release on the Craft Plugin Store, for Craft CMS 5. Builds on the
+initial review system with a full comments system, a submitter blocklist,
+pluggable captcha, privacy controls, and an automated test suite.
 
 ### Added
 - **Comments** — a threaded comment system for entries, as a first-class element
   alongside reviews:
   - Four-state moderation, CP element index, and bulk actions (shared with
-    reviews via a new `ModeratedElement` base).
+    reviews via a `ModeratedElement` base).
   - Threaded replies with a configurable maximum depth (`maxCommentDepth`);
     over-deep replies attach at the deepest allowed level.
   - Frontend submission (`actions/stars/comments/save`), optional login gating
@@ -24,24 +28,10 @@
   Turnstile, selectable per site. Applies to reviews and comments alike.
   `craft.reviews.captcha()` / `craft.comments.captcha()` expose the provider and
   site key for the frontend widget.
-
-### Changed
-- Spam rate limiting is now context-aware (reviews vs. comments count against
-  their own tables). Existing review behavior is unchanged.
-- The legacy `enableRecaptcha` / `recaptcha*` settings are superseded by
-  `captchaProvider` / `captcha*` but are still honored (mapped to reCAPTCHA v3).
-
-## 5.0.0 - 2026-07-19
-
-> [!NOTE]
-> Stars’ version now tracks the major version of Craft CMS it targets. 5.0.0 is
-> the first public release on the Craft Plugin Store, for Craft CMS 5.
-
-### Added
-- Privacy controls: `captureIpAddress`, `captureUserAgent`, and `captureReferrer`
-  settings to independently disable storing each piece of submission metadata
-  (GDPR-style data minimization). All default to on.
-- Reviewer email addresses are now masked in error logs (e.g. `a***@example.com`).
+- **Privacy controls** — `captureIpAddress`, `captureUserAgent`, and
+  `captureReferrer` settings to independently disable storing each piece of
+  submission metadata (GDPR-style data minimization). All default to on.
+- Reviewer/commenter email addresses are masked in error logs (e.g. `a***@example.com`).
 - Automated test suite (Codeception + Craft's test framework), runnable via DDEV.
 
 ### Fixed
@@ -51,6 +41,10 @@
   rejecting valid reviews whenever rate limiting was enabled (on by default).
 
 ### Changed
+- Spam rate limiting is context-aware (reviews vs. comments count against their
+  own tables).
+- The legacy `enableRecaptcha` / `recaptcha*` settings are superseded by
+  `captchaProvider` / `captcha*` but are still honored (mapped to reCAPTCHA v3).
 - New plugin icon.
 - Licensed under the standard Craft License.
 

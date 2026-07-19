@@ -1,7 +1,7 @@
 {
     "name": "justinholtweb/craft-stars",
     "description": "Review & testimonial management for Craft CMS — star ratings, moderation, schema.org markup, and spam protection.",
-    "version": "6.0.0",
+    "version": "5.0.0",
     "type": "craft-plugin",
     "keywords": [
         "craftcms",

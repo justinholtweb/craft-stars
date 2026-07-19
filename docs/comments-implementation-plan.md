@@ -5,7 +5,7 @@ replies, a blocklist, login gating, and pluggable captcha providers. Built on a
 shared element base so Reviews and Comments share moderation, author capture,
 and spam protection instead of duplicating it.
 
-Target: ships as Stars **6.0.0** (schema change → `Plugin::$schemaVersion` bump).
+Target: ships in Stars **5.0.0** (schema change → `Plugin::$schemaVersion` bump).
 
 ---
 

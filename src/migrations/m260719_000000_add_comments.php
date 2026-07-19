@@ -5,7 +5,7 @@ namespace justinholtweb\stars\migrations;
 use craft\db\Migration;
 
 /**
- * Adds the {{%stars_comments}} table for existing installs upgrading to 6.0.0.
+ * Adds the {{%stars_comments}} table for existing installs.
  * Fresh installs get this table from Install::safeUp() instead.
  */
 class m260719_000000_add_comments extends Migration
