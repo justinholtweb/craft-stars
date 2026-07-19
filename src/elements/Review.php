@@ -9,9 +9,9 @@ use craft\helpers\Cp;
 use craft\helpers\Db;
 use craft\helpers\Html;
 use craft\helpers\UrlHelper;
-use justinholtweb\stars\elements\actions\ApproveReviews;
+use justinholtweb\stars\elements\actions\Approve;
 use justinholtweb\stars\elements\actions\MarkAsSpam;
-use justinholtweb\stars\elements\actions\RejectReviews;
+use justinholtweb\stars\elements\actions\Reject;
 use justinholtweb\stars\elements\base\ModeratedElement;
 use justinholtweb\stars\elements\db\ReviewQuery;
 use justinholtweb\stars\Plugin;
@@ -100,8 +100,8 @@ class Review extends ModeratedElement
     {
         $actions = [];
 
-        $actions[] = ApproveReviews::class;
-        $actions[] = RejectReviews::class;
+        $actions[] = Approve::class;
+        $actions[] = Reject::class;
         $actions[] = MarkAsSpam::class;
 
         $actions[] = [

@@ -1,0 +1,15 @@
+{% extends 'stars/_layouts/plugin' %}
+
+{% set title = 'Comments'|t('stars') %}
+{% set selectedSubnavItem = 'comments' %}
+{% set elementType = 'justinholtweb\\stars\\elements\\Comment' %}
+
+{% block content %}
+    {{ craft.app.view.renderTemplate('_elements/indexcontainer', {
+        elementType: elementType,
+        sources: null,
+        context: 'index',
+        showStatusMenu: true,
+        showSiteMenu: false,
+    }) }}
+{% endblock %}
