@@ -249,3 +249,17 @@
     on: settings.enableAdminResponse,
     warning: configWarning('enableAdminResponse'),
 }) }}
+
+<hr>
+
+{# ── Comments ── #}
+<h2>{{ 'Comments'|t('stars') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Enable Comments'|t('stars'),
+    instructions: 'Enable the Comments section and threaded commenting.'|t('stars'),
+    id: 'enableComments',
+    name: 'enableComments',
+    on: settings.enableComments,
+    warning: configWarning('enableComments'),
+}) }}

@@ -40,6 +40,9 @@ class Settings extends Model
     public bool $enableCons = true;
     public bool $enableAdminResponse = true;
 
+    // Comments
+    public bool $enableComments = true;
+
     public function defineRules(): array
     {
         return [
@@ -48,7 +51,7 @@ class Settings extends Model
             [['rateLimitMinutes'], 'integer', 'min' => 0],
             [['minSubmissionTime'], 'integer', 'min' => 0],
             [['recaptchaSiteKey', 'recaptchaSecretKey', 'notificationEmails', 'schemaItemType'], 'string'],
-            [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer'], 'boolean'],
+            [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer', 'enableComments'], 'boolean'],
         ];
     }
 }

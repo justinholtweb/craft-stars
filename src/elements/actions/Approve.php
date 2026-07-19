@@ -8,13 +8,13 @@ use craft\elements\db\ElementQueryInterface;
 use justinholtweb\stars\elements\base\ModeratedElement;
 
 /**
- * Bulk-mark any ModeratedElement (Reviews, Comments) as spam.
+ * Bulk-approve any ModeratedElement (Reviews, Comments).
  */
-class MarkAsSpam extends ElementAction
+class Approve extends ElementAction
 {
     public static function displayName(): string
     {
-        return Craft::t('stars', 'Mark as Spam');
+        return Craft::t('stars', 'Approve');
     }
 
     public function getTriggerLabel(): string
@@ -22,25 +22,15 @@ class MarkAsSpam extends ElementAction
         return static::displayName();
     }
 
-    public function getTriggerHtml(): ?string
-    {
-        return null;
-    }
-
-    public function getConfirmationMessage(): ?string
-    {
-        return Craft::t('stars', 'Are you sure you want to mark the selected items as spam?');
-    }
-
     public function performAction(ElementQueryInterface $query): bool
     {
         foreach ($query->all() as $element) {
             /** @var ModeratedElement $element */
-            $element->{$element::statusAttribute()} = 'spam';
+            $element->{$element::statusAttribute()} = 'approved';
             Craft::$app->getElements()->saveElement($element);
         }
 
-        $this->setMessage(Craft::t('stars', '{name} marked as spam.', [
+        $this->setMessage(Craft::t('stars', '{name} approved.', [
             'name' => $query->elementType::pluralDisplayName(),
         ]));
         return true;

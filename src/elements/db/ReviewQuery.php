@@ -2,25 +2,18 @@
 
 namespace justinholtweb\stars\elements\db;
 
-use craft\elements\db\ElementQuery;
 use craft\helpers\Db;
+use justinholtweb\stars\elements\base\ModeratedQuery;
 
-class ReviewQuery extends ElementQuery
+class ReviewQuery extends ModeratedQuery
 {
-    public ?int $entryId = null;
+    // entryId and ipAddress params live on ModeratedQuery.
     public ?int $rating = null;
     public ?int $minRating = null;
     public ?int $maxRating = null;
     public ?string $reviewerName = null;
     public ?string $reviewerEmail = null;
     public ?string $reviewStatus = null;
-    public ?string $ipAddress = null;
-
-    public function entryId(?int $value): static
-    {
-        $this->entryId = $value;
-        return $this;
-    }
 
     public function rating(?int $value): static
     {
@@ -55,12 +48,6 @@ class ReviewQuery extends ElementQuery
     public function reviewStatus(?string $value): static
     {
         $this->reviewStatus = $value;
-        return $this;
-    }
-
-    public function ipAddress(?string $value): static
-    {
-        $this->ipAddress = $value;
         return $this;
     }
 
@@ -119,14 +106,8 @@ class ReviewQuery extends ElementQuery
         return parent::beforePrepare();
     }
 
-    protected function statusCondition(string $status): mixed
+    protected function statusColumn(): string
     {
-        return match ($status) {
-            'pending' => ['stars_reviews.reviewStatus' => 'pending'],
-            'approved' => ['stars_reviews.reviewStatus' => 'approved'],
-            'rejected' => ['stars_reviews.reviewStatus' => 'rejected'],
-            'spam' => ['stars_reviews.reviewStatus' => 'spam'],
-            default => parent::statusCondition($status),
-        };
+        return 'stars_reviews.reviewStatus';
     }
 }

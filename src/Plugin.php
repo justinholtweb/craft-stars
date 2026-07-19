@@ -12,8 +12,10 @@ use craft\services\Elements;
 use craft\services\UserPermissions;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
+use justinholtweb\stars\elements\Comment;
 use justinholtweb\stars\elements\Review;
 use justinholtweb\stars\models\Settings;
+use justinholtweb\stars\services\CommentService;
 use justinholtweb\stars\services\NotificationService;
 use justinholtweb\stars\services\ReviewService;
 use justinholtweb\stars\services\SchemaService;
@@ -26,13 +28,14 @@ use yii\base\Event;
  * Stars plugin for Craft CMS 5
  *
  * @property-read ReviewService $reviews
+ * @property-read CommentService $comments
  * @property-read SpamService $spam
  * @property-read SchemaService $schema
  * @property-read NotificationService $notifications
  */
 class Plugin extends BasePlugin
 {
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '2.0.0';
     public bool $hasCpSettings = true;
     public bool $hasCpSection = true;
 
@@ -41,6 +44,7 @@ class Plugin extends BasePlugin
         return [
             'components' => [
                 'reviews' => ReviewService::class,
+                'comments' => CommentService::class,
                 'spam' => SpamService::class,
                 'schema' => SchemaService::class,
                 'notifications' => NotificationService::class,
@@ -69,10 +73,18 @@ class Plugin extends BasePlugin
                 'label' => Craft::t('stars', 'Reviews'),
                 'url' => 'stars/reviews',
             ],
-            'settings' => [
-                'label' => Craft::t('stars', 'Settings'),
-                'url' => 'settings/plugins/stars',
-            ],
+        ];
+
+        if ($this->getSettings()->enableComments) {
+            $item['subnav']['comments'] = [
+                'label' => Craft::t('stars', 'Comments'),
+                'url' => 'stars/comments',
+            ];
+        }
+
+        $item['subnav']['settings'] = [
+            'label' => Craft::t('stars', 'Settings'),
+            'url' => 'settings/plugins/stars',
         ];
 
         return $item;
@@ -98,6 +110,7 @@ class Plugin extends BasePlugin
             Elements::EVENT_REGISTER_ELEMENT_TYPES,
             function (RegisterComponentTypesEvent $event) {
                 $event->types[] = Review::class;
+                $event->types[] = Comment::class;
             }
         );
     }
@@ -112,6 +125,9 @@ class Plugin extends BasePlugin
                 $event->rules['stars/reviews'] = ['template' => 'stars/reviews/_index'];
                 $event->rules['stars/reviews/new'] = 'elements/edit';
                 $event->rules['stars/reviews/<elementId:\\d+>'] = 'elements/edit';
+                $event->rules['stars/comments'] = ['template' => 'stars/comments/_index'];
+                $event->rules['stars/comments/new'] = 'elements/edit';
+                $event->rules['stars/comments/<elementId:\\d+>'] = 'elements/edit';
             }
         );
     }
@@ -157,6 +173,23 @@ class Plugin extends BasePlugin
                                 ],
                                 'stars:deleteReviews' => [
                                     'label' => Craft::t('stars', 'Delete reviews'),
+                                ],
+                            ],
+                        ],
+                        'stars:viewComments' => [
+                            'label' => Craft::t('stars', 'View comments'),
+                            'nested' => [
+                                'stars:manageComments' => [
+                                    'label' => Craft::t('stars', 'Create and edit comments'),
+                                ],
+                                'stars:moderateComments' => [
+                                    'label' => Craft::t('stars', 'Moderate comments (approve, reject, spam)'),
+                                ],
+                                'stars:replyToComments' => [
+                                    'label' => Craft::t('stars', 'Reply to comments'),
+                                ],
+                                'stars:deleteComments' => [
+                                    'label' => Craft::t('stars', 'Delete comments'),
                                 ],
                             ],
                         ],
