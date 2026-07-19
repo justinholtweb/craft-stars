@@ -19,32 +19,50 @@ Stars is a review and testimonial management plugin for Craft CMS 5. It provides
 - Composer package: `justinholtweb/craft-stars`
 - Plugin handle: `stars`
 
-### Custom Element Type
+### Custom Element Types
 
-Reviews are first-class Craft elements (`justinholtweb\stars\elements\Review`). This means they use:
+Reviews (`elements\Review`) and Comments (`elements\Comment`) are first-class
+Craft elements sharing an abstract base (`elements\base\ModeratedElement` +
+`elements\base\ModeratedQuery`) that provides the four-state status system,
+entry attachment, captured submission metadata, and a generic custom-table
+write. Concrete types declare their status column, table, and column map. They use:
 - Native CP element index with sources sidebar, table columns, sort options, and search
 - Craft 5 native element editor (no custom edit templates) via `metaFieldsHtml()` + `metadata()`
-- Standard element queries via `ReviewQuery`
-- Element actions for bulk operations
+- Standard element queries via `ReviewQuery` / `CommentQuery`
+- Shared, status-attribute-driven bulk actions (`Approve`, `Reject`, `MarkAsSpam`, `BlockAuthor`)
+
+Comments support threaded replies (`parentId`, capped by `maxCommentDepth`,
+enforced in `Comment::beforeSave()`); `CommentService::getCommentTree()` builds
+the nested tree from one flat query.
 
 ### Database
 
-Single table `{{%stars_reviews}}` with:
-- `id` FK to `elements.id` (CASCADE) — element lifecycle managed by Craft
-- `entryId` FK to `elements.id` (SET NULL) — reviews survive entry deletion
-- Custom `reviewStatus` column (pending/approved/rejected/spam) instead of Craft's binary enabled/disabled
+- `{{%stars_reviews}}` — `id` FK→elements (CASCADE), `entryId` FK→elements
+  (SET NULL), custom `reviewStatus` column (pending/approved/rejected/spam).
+- `{{%stars_comments}}` — same lifecycle, plus `parentId` (self-FK, SET NULL),
+  `authorUserId`, and `commentStatus`.
+- `{{%stars_blocklist}}` — `type` (email/ip/user) + `value`, unique per pair.
+
+Fresh installs build all tables in `migrations/Install.php`; existing installs
+get incremental `mYYMMDD_*` migrations. `Plugin::$schemaVersion` tracks the DB
+schema independently of the release version.
 
 ### Services (registered as plugin components)
 
 - `Plugin::$reviews` → `ReviewService` — CRUD, aggregations (average, count, distribution)
-- `Plugin::$spam` → `SpamService` — honeypot, reCAPTCHA v3, rate limiting, submission time
+- `Plugin::$comments` → `CommentService` — queries, threaded tree, moderation helpers
+- `Plugin::$spam` → `SpamService` — honeypot, captcha (via provider abstraction), rate limiting, submission time
+- `Plugin::$block` → `BlockService` — blocklist by email/IP/user
 - `Plugin::$schema` → `SchemaService` — JSON-LD generation
 - `Plugin::$notifications` → `NotificationService` — email via Craft Mailer
 
+Captcha uses a provider abstraction (`services\captcha\*`): reCAPTCHA v2/v3,
+hCaptcha, Turnstile, selected by `CaptchaProviderFactory` from settings.
+
 ### Frontend
 
-- Controller action: `stars/reviews/save` (anonymous POST allowed)
-- Twig variable: `craft.reviews` → `StarsVariable` (registered via `CraftVariable::EVENT_INIT`)
+- Controller actions: `stars/reviews/save` and `stars/comments/save` (anonymous POST allowed)
+- Twig variables: `craft.reviews` → `StarsVariable`, `craft.comments` → `CommentsVariable` (registered via `CraftVariable::EVENT_INIT`)
 - Supports both traditional form POST (redirect) and JSON API responses
 
 ## File Structure

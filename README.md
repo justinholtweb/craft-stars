@@ -1,6 +1,6 @@
-# Stars — Review & Testimonial Management for Craft CMS 5
+# Stars — Reviews & Comments for Craft CMS 5
 
-A structured review system for Craft CMS with star ratings, four-state moderation, pros/cons, admin responses, spam protection, and schema.org JSON-LD markup.
+A structured reviews **and** comments system for Craft CMS: star ratings, threaded comments, four-state moderation, pros/cons, admin responses, a submitter blocklist, pluggable captcha, spam protection, and schema.org JSON-LD markup.
 
 ## Requirements
 
@@ -17,14 +17,18 @@ php craft plugin/install stars
 ## Features
 
 - **Star ratings** — configurable max (1-5 or 1-10)
-- **Four-state moderation** — pending, approved, rejected, spam
+- **Threaded comments** — a full comment system on entries with configurable reply depth
+- **Four-state moderation** — pending, approved, rejected, spam (reviews and comments)
 - **Pros & cons** — optional structured pro/con lists per review
 - **Admin responses** — reply to reviews from the CP with timestamp
-- **Spam protection** — honeypot, Google reCAPTCHA v3, IP rate limiting, submission time check
+- **Blocklist** — block submitters by email, IP, or user id
+- **Pluggable captcha** — reCAPTCHA v3, reCAPTCHA v2, hCaptcha, or Cloudflare Turnstile
+- **Spam protection** — honeypot, per-IP rate limiting, submission time check
+- **Login gating** — optionally require login (and auto-fill author details)
 - **Schema.org** — JSON-LD output with `Review` + `AggregateRating` markup
-- **Email notifications** — configurable recipients on new submissions
-- **User permissions** — view, manage, moderate, respond, delete
-- **Bulk actions** — approve, reject, mark as spam from the element index
+- **Email notifications** — new submissions to moderators, replies to comment authors
+- **User permissions** — separate permission tiers for reviews, comments, and the blocklist
+- **Bulk actions** — approve, reject, mark as spam, block author
 - **Craft 5 native element editor** — sidebar fields, metadata, element chips
 
 ## Usage

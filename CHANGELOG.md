@@ -1,5 +1,36 @@
 # Changelog
 
+## 6.0.0 - 2026-07-19
+
+### Added
+- **Comments** — a threaded comment system for entries, as a first-class element
+  alongside reviews:
+  - Four-state moderation, CP element index, and bulk actions (shared with
+    reviews via a new `ModeratedElement` base).
+  - Threaded replies with a configurable maximum depth (`maxCommentDepth`);
+    over-deep replies attach at the deepest allowed level.
+  - Frontend submission (`actions/stars/comments/save`), optional login gating
+    (`commentsRequireLogin` / `commentsAllowAnonymous`), and auto-filled author
+    details for logged-in users.
+  - `craft.comments` Twig API (`tree`, `forEntry`, `topLevel`, `replies`,
+    `count`) and a bundled recursive `stars/_comments/thread.twig` macro.
+  - Email notifications to moderators, plus reply notifications to the parent
+    comment's author.
+  - Comment permissions: view / manage / moderate / reply / delete.
+- **Blocklist** — block submitters by email, IP, or user id. Enforced on both
+  review and comment submission, with a CP management section, a "Block Author"
+  bulk action, and a `stars:manageBlocklist` permission.
+- **Pluggable captcha** — reCAPTCHA v3, reCAPTCHA v2, hCaptcha, and Cloudflare
+  Turnstile, selectable per site. Applies to reviews and comments alike.
+  `craft.reviews.captcha()` / `craft.comments.captcha()` expose the provider and
+  site key for the frontend widget.
+
+### Changed
+- Spam rate limiting is now context-aware (reviews vs. comments count against
+  their own tables). Existing review behavior is unchanged.
+- The legacy `enableRecaptcha` / `recaptcha*` settings are superseded by
+  `captchaProvider` / `captcha*` but are still honored (mapped to reCAPTCHA v3).
+
 ## 5.0.0 - 2026-07-19
 
 > [!NOTE]
