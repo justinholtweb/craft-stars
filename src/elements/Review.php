@@ -10,6 +10,7 @@ use craft\helpers\Db;
 use craft\helpers\Html;
 use craft\helpers\UrlHelper;
 use justinholtweb\stars\elements\actions\Approve;
+use justinholtweb\stars\elements\actions\BlockAuthor;
 use justinholtweb\stars\elements\actions\MarkAsSpam;
 use justinholtweb\stars\elements\actions\Reject;
 use justinholtweb\stars\elements\base\ModeratedElement;
@@ -103,6 +104,7 @@ class Review extends ModeratedElement
         $actions[] = Approve::class;
         $actions[] = Reject::class;
         $actions[] = MarkAsSpam::class;
+        $actions[] = BlockAuthor::class;
 
         $actions[] = [
             'type' => \craft\elements\actions\Delete::class,
@@ -172,6 +174,11 @@ class Review extends ModeratedElement
         $entry = $this->getEntry();
         $entryTitle = $entry ? $entry->title : Craft::t('stars', 'Unknown Entry');
         return Craft::t('stars', 'Review by {name}', ['name' => $this->reviewerName ?: Craft::t('stars', 'Anonymous')]);
+    }
+
+    public function getAuthorEmail(): ?string
+    {
+        return $this->reviewerEmail;
     }
 
     public function getProsArray(): array

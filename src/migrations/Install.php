@@ -87,11 +87,26 @@ class Install extends Migration
         $this->createIndex(null, '{{%stars_comments}}', 'commentStatus');
         $this->createIndex(null, '{{%stars_comments}}', ['entryId', 'commentStatus']);
 
+        $this->createTable('{{%stars_blocklist}}', [
+            'id' => $this->primaryKey(),
+            'type' => $this->string(10)->notNull(),
+            'value' => $this->string(255)->notNull(),
+            'reason' => $this->string(255),
+            'createdBy' => $this->integer(),
+            'dateCreated' => $this->dateTime()->notNull(),
+            'dateUpdated' => $this->dateTime()->notNull(),
+            'uid' => $this->uid(),
+        ]);
+
+        $this->addForeignKey(null, '{{%stars_blocklist}}', 'createdBy', '{{%elements}}', 'id', 'SET NULL', null);
+        $this->createIndex(null, '{{%stars_blocklist}}', ['type', 'value'], true);
+
         return true;
     }
 
     public function safeDown(): bool
     {
+        $this->dropTableIfExists('{{%stars_blocklist}}');
         $this->dropTableIfExists('{{%stars_comments}}');
         $this->dropTableIfExists('{{%stars_reviews}}');
         return true;

@@ -34,6 +34,22 @@ class ReviewsController extends Controller
             return null;
         }
 
+        // Blocklist check
+        if (Plugin::getInstance()->block->isBlocked(
+            $request->getBodyParam('reviewerEmail'),
+            $request->getUserIP(),
+            Craft::$app->getUser()->getId()
+        )) {
+            if ($request->getAcceptsJson()) {
+                return $this->asJson([
+                    'success' => false,
+                    'error' => Craft::t('stars', 'Your submission was flagged as spam.'),
+                ]);
+            }
+            Craft::$app->getSession()->setError(Craft::t('stars', 'Your submission was flagged as spam.'));
+            return null;
+        }
+
         // Spam check
         if (Plugin::getInstance()->spam->isSpam()) {
             if ($request->getAcceptsJson()) {

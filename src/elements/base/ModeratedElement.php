@@ -47,6 +47,11 @@ abstract class ModeratedElement extends Element
      */
     abstract protected function customAttributes(): array;
 
+    /**
+     * The submitter's email address, used for blocklisting.
+     */
+    abstract public function getAuthorEmail(): ?string;
+
     public static function hasStatuses(): bool
     {
         return true;

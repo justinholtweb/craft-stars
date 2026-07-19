@@ -34,6 +34,12 @@ class CommentsController extends Controller
             return $this->_fail($request, Craft::t('stars', 'You must be logged in to comment.'));
         }
 
+        // Blocklist check
+        $checkEmail = $user ? $user->email : $request->getBodyParam('authorEmail');
+        if (Plugin::getInstance()->block->isBlocked($checkEmail, $request->getUserIP(), $user?->id)) {
+            return $this->_fail($request, Craft::t('stars', 'Your submission was flagged as spam.'));
+        }
+
         // Spam check (rate-limited against the comments table)
         if (Plugin::getInstance()->spam->isSpam('comments')) {
             return $this->_fail($request, Craft::t('stars', 'Your submission was flagged as spam.'));

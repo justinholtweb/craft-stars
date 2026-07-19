@@ -11,6 +11,7 @@ use craft\helpers\Html;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
 use justinholtweb\stars\elements\actions\Approve;
+use justinholtweb\stars\elements\actions\BlockAuthor;
 use justinholtweb\stars\elements\actions\MarkAsSpam;
 use justinholtweb\stars\elements\actions\Reject;
 use justinholtweb\stars\elements\base\ModeratedElement;
@@ -107,6 +108,7 @@ class Comment extends ModeratedElement
             Approve::class,
             Reject::class,
             MarkAsSpam::class,
+            BlockAuthor::class,
             [
                 'type' => \craft\elements\actions\Delete::class,
                 'confirmationMessage' => Craft::t('stars', 'Are you sure you want to delete the selected comments?'),
@@ -178,6 +180,11 @@ class Comment extends ModeratedElement
     public function getCpEditUrl(): ?string
     {
         return UrlHelper::cpUrl("stars/comments/{$this->id}");
+    }
+
+    public function getAuthorEmail(): ?string
+    {
+        return $this->authorEmail;
     }
 
     public function canView(\craft\elements\User $user): bool

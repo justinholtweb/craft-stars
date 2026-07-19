@@ -1,0 +1,77 @@
+{% extends 'stars/_layouts/plugin' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'Blocklist'|t('stars') %}
+{% set selectedSubnavItem = 'blocklist' %}
+
+{% block content %}
+    <form method="post" accept-charset="UTF-8" class="stars-blocklist-add">
+        {{ csrfInput() }}
+        {{ actionInput('stars/blocklist/add') }}
+        {{ redirectInput('stars/blocklist') }}
+
+        <div class="flex flex-nowrap">
+            {{ forms.selectField({
+                label: 'Type'|t('stars'),
+                name: 'type',
+                options: [
+                    { label: 'Email'|t('stars'), value: 'email' },
+                    { label: 'IP Address'|t('stars'), value: 'ip' },
+                    { label: 'User ID'|t('stars'), value: 'user' },
+                ],
+            }) }}
+
+            {{ forms.textField({
+                label: 'Value'|t('stars'),
+                name: 'value',
+                placeholder: 'spammer@example.com'|t('stars'),
+                required: true,
+            }) }}
+
+            {{ forms.textField({
+                label: 'Reason'|t('stars'),
+                name: 'reason',
+                instructions: 'Optional'|t('stars'),
+            }) }}
+        </div>
+
+        <button type="submit" class="btn submit">{{ 'Add to blocklist'|t('stars') }}</button>
+    </form>
+
+    <hr>
+
+    {% if entries|length %}
+        <table class="data fullwidth">
+            <thead>
+                <tr>
+                    <th>{{ 'Type'|t('stars') }}</th>
+                    <th>{{ 'Value'|t('stars') }}</th>
+                    <th>{{ 'Reason'|t('stars') }}</th>
+                    <th>{{ 'Date'|t('stars') }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                    <tr>
+                        <td>{{ entry.type|capitalize }}</td>
+                        <td><code>{{ entry.value }}</code></td>
+                        <td>{{ entry.reason ?? '' }}</td>
+                        <td>{{ entry.dateCreated|date('short') }}</td>
+                        <td class="thin">
+                            <form method="post" accept-charset="UTF-8">
+                                {{ csrfInput() }}
+                                {{ actionInput('stars/blocklist/delete') }}
+                                {{ redirectInput('stars/blocklist') }}
+                                {{ hiddenInput('id', entry.id) }}
+                                <button type="submit" class="btn small">{{ 'Remove'|t('stars') }}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>{{ 'Nothing is blocked yet.'|t('stars') }}</p>
+    {% endif %}
+{% endblock %}

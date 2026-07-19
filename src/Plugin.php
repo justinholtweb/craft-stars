@@ -15,6 +15,7 @@ use craft\web\UrlManager;
 use justinholtweb\stars\elements\Comment;
 use justinholtweb\stars\elements\Review;
 use justinholtweb\stars\models\Settings;
+use justinholtweb\stars\services\BlockService;
 use justinholtweb\stars\services\CommentService;
 use justinholtweb\stars\services\NotificationService;
 use justinholtweb\stars\services\ReviewService;
@@ -33,10 +34,11 @@ use yii\base\Event;
  * @property-read SpamService $spam
  * @property-read SchemaService $schema
  * @property-read NotificationService $notifications
+ * @property-read BlockService $block
  */
 class Plugin extends BasePlugin
 {
-    public string $schemaVersion = '2.0.0';
+    public string $schemaVersion = '3.0.0';
     public bool $hasCpSettings = true;
     public bool $hasCpSection = true;
 
@@ -49,6 +51,7 @@ class Plugin extends BasePlugin
                 'spam' => SpamService::class,
                 'schema' => SchemaService::class,
                 'notifications' => NotificationService::class,
+                'block' => BlockService::class,
             ],
         ];
     }
@@ -80,6 +83,13 @@ class Plugin extends BasePlugin
             $item['subnav']['comments'] = [
                 'label' => Craft::t('stars', 'Comments'),
                 'url' => 'stars/comments',
+            ];
+        }
+
+        if (Craft::$app->getUser()->checkPermission('stars:manageBlocklist')) {
+            $item['subnav']['blocklist'] = [
+                'label' => Craft::t('stars', 'Blocklist'),
+                'url' => 'stars/blocklist',
             ];
         }
 
@@ -129,6 +139,7 @@ class Plugin extends BasePlugin
                 $event->rules['stars/comments'] = ['template' => 'stars/comments/_index'];
                 $event->rules['stars/comments/new'] = 'elements/edit';
                 $event->rules['stars/comments/<elementId:\\d+>'] = 'elements/edit';
+                $event->rules['stars/blocklist'] = 'stars/blocklist/index';
             }
         );
     }
@@ -194,6 +205,9 @@ class Plugin extends BasePlugin
                                     'label' => Craft::t('stars', 'Delete comments'),
                                 ],
                             ],
+                        ],
+                        'stars:manageBlocklist' => [
+                            'label' => Craft::t('stars', 'Manage the blocklist'),
                         ],
                     ],
                 ];
