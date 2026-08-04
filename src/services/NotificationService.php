@@ -5,6 +5,7 @@ namespace justinholtweb\stars\services;
 use Craft;
 use craft\base\Component;
 use craft\helpers\App;
+use craft\web\View;
 use justinholtweb\stars\elements\Comment;
 use justinholtweb\stars\elements\Review;
 use justinholtweb\stars\Plugin;
@@ -33,17 +34,17 @@ class NotificationService extends Component
 
         $subject = Craft::t('stars', 'New Review: {entryTitle}', ['entryTitle' => $entryTitle]);
 
-        $htmlBody = Craft::$app->getView()->renderTemplate('stars/email/new-review', [
+        $bodies = $this->_renderEmail('stars/email/new-review', [
             'review' => $review,
             'entry' => $entry,
             'settings' => $settings,
         ]);
 
-        $textBody = Craft::$app->getView()->renderTemplate('stars/email/new-review.txt', [
-            'review' => $review,
-            'entry' => $entry,
-            'settings' => $settings,
-        ]);
+        if ($bodies === null) {
+            return;
+        }
+
+        [$htmlBody, $textBody] = $bodies;
 
         foreach ($emails as $email) {
             try {
@@ -82,17 +83,17 @@ class NotificationService extends Component
 
         $subject = Craft::t('stars', 'New Comment: {entryTitle}', ['entryTitle' => $entryTitle]);
 
-        $htmlBody = Craft::$app->getView()->renderTemplate('stars/email/new-comment', [
+        $bodies = $this->_renderEmail('stars/email/new-comment', [
             'comment' => $comment,
             'entry' => $entry,
             'settings' => $settings,
         ]);
 
-        $textBody = Craft::$app->getView()->renderTemplate('stars/email/new-comment.txt', [
-            'comment' => $comment,
-            'entry' => $entry,
-            'settings' => $settings,
-        ]);
+        if ($bodies === null) {
+            return;
+        }
+
+        [$htmlBody, $textBody] = $bodies;
 
         foreach ($emails as $email) {
             try {
@@ -137,19 +138,18 @@ class NotificationService extends Component
 
         $subject = Craft::t('stars', 'New reply to your comment');
 
-        $htmlBody = Craft::$app->getView()->renderTemplate('stars/email/comment-reply', [
+        $bodies = $this->_renderEmail('stars/email/comment-reply', [
             'reply' => $reply,
             'parent' => $parent,
             'entry' => $entry,
             'settings' => $settings,
         ]);
 
-        $textBody = Craft::$app->getView()->renderTemplate('stars/email/comment-reply.txt', [
-            'reply' => $reply,
-            'parent' => $parent,
-            'entry' => $entry,
-            'settings' => $settings,
-        ]);
+        if ($bodies === null) {
+            return;
+        }
+
+        [$htmlBody, $textBody] = $bodies;
 
         try {
             Craft::$app->getMailer()
@@ -161,6 +161,34 @@ class NotificationService extends Component
                 ->send();
         } catch (\Throwable $e) {
             Craft::error("Failed to send reply notification to {$this->_maskEmail($parent->authorEmail)}: " . $e->getMessage(), 'stars');
+        }
+    }
+
+    /**
+     * Render an email template's HTML and text bodies.
+     *
+     * These templates live in the plugin's own `src/templates` directory, which
+     * Craft only registers as a *control panel* template root. They must
+     * therefore be rendered in CP template mode, or they can't be resolved
+     * during a frontend submission.
+     *
+     * Returns null (having logged the failure) if either body fails to render,
+     * so that a broken email template never takes down a submission.
+     *
+     * @return string[]|null [$htmlBody, $textBody]
+     */
+    private function _renderEmail(string $template, array $variables): ?array
+    {
+        $view = Craft::$app->getView();
+
+        try {
+            return [
+                $view->renderTemplate($template, $variables, View::TEMPLATE_MODE_CP),
+                $view->renderTemplate("$template.txt", $variables, View::TEMPLATE_MODE_CP),
+            ];
+        } catch (\Throwable $e) {
+            Craft::error("Failed to render email template \"$template\": " . $e->getMessage(), 'stars');
+            return null;
         }
     }
 

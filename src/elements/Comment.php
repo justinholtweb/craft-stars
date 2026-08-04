@@ -147,7 +147,7 @@ class Comment extends ModeratedElement
         return ['authorName', 'authorEmail', 'body'];
     }
 
-    protected function tableAttributeHtml(string $attribute): string
+    protected function attributeHtml(string $attribute): string
     {
         switch ($attribute) {
             case 'entryId':
@@ -166,7 +166,7 @@ class Comment extends ModeratedElement
             case 'body':
                 return Html::encode(StringHelper::truncate($this->body ?? '', 60));
             default:
-                return parent::tableAttributeHtml($attribute);
+                return parent::attributeHtml($attribute);
         }
     }
 

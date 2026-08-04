@@ -1,16 +1,5 @@
-{% extends 'stars/_layouts/plugin' %}
+{% extends '_layouts/elementindex' %}
 
 {% set title = 'Reviews'|t('stars') %}
 {% set selectedSubnavItem = 'reviews' %}
 {% set elementType = 'justinholtweb\\stars\\elements\\Review' %}
-
-{% block content %}
-    {% set newElementUrl = url('stars/reviews/new') %}
-    {{ craft.app.view.renderTemplate('_elements/indexcontainer', {
-        elementType: elementType,
-        sources: null,
-        context: 'index',
-        showStatusMenu: true,
-        showSiteMenu: false,
-    }) }}
-{% endblock %}

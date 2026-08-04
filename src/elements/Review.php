@@ -146,7 +146,7 @@ class Review extends ModeratedElement
         return ['reviewerName', 'reviewerEmail', 'reviewText'];
     }
 
-    protected function tableAttributeHtml(string $attribute): string
+    protected function attributeHtml(string $attribute): string
     {
         switch ($attribute) {
             case 'rating':
@@ -165,7 +165,7 @@ class Review extends ModeratedElement
                 }
                 return $this->reviewStatus;
             default:
-                return parent::tableAttributeHtml($attribute);
+                return parent::attributeHtml($attribute);
         }
     }
 

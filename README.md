@@ -56,7 +56,7 @@ php craft plugin/install stars
     <label for="rating">Rating</label>
     <select id="rating" name="rating">
         {% for i in 1..5 %}
-            <option value="{{ i }}">{{ '★'|repeat(i) }}{{ '☆'|repeat(5 - i) }}</option>
+            <option value="{{ i }}">{{ '★★★★★'|slice(0, i) }}{{ '☆☆☆☆☆'|slice(0, 5 - i) }}</option>
         {% endfor %}
     </select>
 
@@ -112,7 +112,7 @@ form.addEventListener('submit', async (e) => {
     {% for review in reviews %}
         <article class="review">
             <strong>{{ review.reviewerName }}</strong>
-            <span>{{ '★'|repeat(review.rating) }}{{ '☆'|repeat(5 - review.rating) }}</span>
+            <span>{{ '★★★★★'|slice(0, review.rating) }}{{ '☆☆☆☆☆'|slice(0, 5 - review.rating) }}</span>
             <time datetime="{{ review.dateCreated|date('Y-m-d') }}">{{ review.dateCreated|date('M j, Y') }}</time>
 
             {% if review.reviewText %}

@@ -1,5 +1,31 @@
 # Changelog
 
+## 5.0.1 - 2026-08-04
+
+### Fixed
+- The Reviews and Comments CP sections rendered their element index as escaped
+  HTML instead of a working index. Both templates now extend Craft's
+  `_layouts/elementindex` rather than echoing the deprecated
+  `_elements/indexcontainer` partial through `renderTemplate()`.
+- Frontend review and comment submissions returned a 500 error whenever
+  notifications were enabled. The element saved, but rendering the notification
+  email threw, because the plugin's email templates live in a control-panel-only
+  template root and were being rendered in site template mode. They're now
+  rendered in CP template mode, and a template failure is logged instead of
+  breaking the submission.
+- Review and Comment index columns showed raw values — the entry ID instead of
+  the entry, the rating number instead of stars, and the lowercase status key
+  instead of a labelled status. The custom column rendering was declared as
+  `tableAttributeHtml()`, which Craft 5 renamed to `attributeHtml()`, so it was
+  never called.
+- Fixed the frontend form and review display examples in the README, which used
+  a `repeat` filter that doesn't exist in Twig or Craft.
+
+### Known issues
+- Reply notifications only fire when a reply is created with `approved` status,
+  so with the default `defaultStatus` of `pending` they never send. Approving a
+  reply later does not trigger them.
+
 ## 5.0.0 - 2026-07-19
 
 First public release on the Craft Plugin Store, for Craft CMS 5. Builds on the
