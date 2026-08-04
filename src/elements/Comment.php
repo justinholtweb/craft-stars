@@ -6,10 +6,14 @@ use Craft;
 use craft\db\Query;
 use craft\elements\Entry;
 use craft\elements\db\ElementQueryInterface;
+use craft\fieldlayoutelements\TextareaField;
+use craft\fieldlayoutelements\TextField;
 use craft\helpers\Cp;
 use craft\helpers\Html;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
+use craft\models\FieldLayout;
+use craft\models\FieldLayoutTab;
 use justinholtweb\stars\elements\actions\Approve;
 use justinholtweb\stars\elements\actions\BlockAuthor;
 use justinholtweb\stars\elements\actions\MarkAsSpam;
@@ -27,6 +31,12 @@ class Comment extends ModeratedElement
     public ?string $authorEmail = null;
     public ?string $body = null;
     public string $commentStatus = 'pending';
+
+    /**
+     * The in-code editor field layout, built once per request.
+     * @see getFieldLayout()
+     */
+    private static ?FieldLayout $_starsFieldLayout = null;
 
     /**
      * Transient nested replies, populated by CommentService::getCommentTree().
@@ -234,11 +244,67 @@ class Comment extends ModeratedElement
         return $rules;
     }
 
+    /**
+     * The comment's own content is rendered in the editor's main body via an
+     * in-code field layout. Nothing here is persisted to project config —
+     * Craft only needs the layout to build the form.
+     *
+     * Craft asks for this on every chip it renders (index rows, breadcrumbs),
+     * so the layout is built once per request and shared.
+     */
+    public function getFieldLayout(): ?FieldLayout
+    {
+        if (self::$_starsFieldLayout !== null) {
+            return self::$_starsFieldLayout;
+        }
+
+        $layout = new FieldLayout(['type' => static::class]);
+
+        $tab = new FieldLayoutTab([
+            'name' => Craft::t('stars', 'Comment'),
+            'sortOrder' => 1,
+        ]);
+
+        // The tab must know its layout before it accepts elements, and the
+        // layout must know its tabs after they're populated.
+        $tab->setLayout($layout);
+
+        $tab->setElements([
+            new TextField([
+                'attribute' => 'authorName',
+                'label' => Craft::t('stars', 'Author Name'),
+                'required' => true,
+                'maxlength' => 255,
+                'width' => 50,
+            ]),
+            new TextField([
+                'attribute' => 'authorEmail',
+                'label' => Craft::t('stars', 'Author Email'),
+                'inputType' => 'email',
+                'width' => 50,
+            ]),
+            new TextareaField([
+                'attribute' => 'body',
+                'label' => Craft::t('stars', 'Comment'),
+                'required' => true,
+                'rows' => 8,
+            ]),
+        ]);
+
+        $layout->setTabs([$tab]);
+
+        return self::$_starsFieldLayout = $layout;
+    }
+
+    /**
+     * The sidebar keeps only what's *about* the comment rather than part of it:
+     * its moderation status, the entry it belongs to, and — for a reply — the
+     * comment it answers.
+     */
     public function metaFieldsHtml(bool $static): string
     {
         $fields = [];
 
-        // Status selector
         $fields[] = Cp::selectFieldHtml([
             'label' => Craft::t('stars', 'Status'),
             'id' => 'commentStatus',
@@ -250,9 +316,9 @@ class Comment extends ModeratedElement
                 ['label' => Craft::t('stars', 'Rejected'), 'value' => 'rejected'],
                 ['label' => Craft::t('stars', 'Spam'), 'value' => 'spam'],
             ],
+            'disabled' => $static,
         ]);
 
-        // Entry selector
         $fields[] = Cp::elementSelectFieldHtml([
             'label' => Craft::t('stars', 'Entry'),
             'id' => 'entryId',
@@ -261,34 +327,7 @@ class Comment extends ModeratedElement
             'elements' => $this->getEntry() ? [$this->getEntry()] : [],
             'limit' => 1,
             'single' => true,
-        ]);
-
-        // Author name
-        $fields[] = Cp::textFieldHtml([
-            'label' => Craft::t('stars', 'Author Name'),
-            'id' => 'authorName',
-            'name' => 'authorName',
-            'value' => $this->authorName,
-            'required' => true,
-        ]);
-
-        // Author email
-        $fields[] = Cp::textFieldHtml([
-            'label' => Craft::t('stars', 'Author Email'),
-            'id' => 'authorEmail',
-            'name' => 'authorEmail',
-            'value' => $this->authorEmail,
-            'type' => 'email',
-        ]);
-
-        // Body
-        $fields[] = Cp::textareaFieldHtml([
-            'label' => Craft::t('stars', 'Comment'),
-            'id' => 'body',
-            'name' => 'body',
-            'value' => $this->body,
-            'rows' => 5,
-            'required' => true,
+            'disabled' => $static,
         ]);
 
         return implode("\n", $fields) . parent::metaFieldsHtml($static);
@@ -297,6 +336,14 @@ class Comment extends ModeratedElement
     protected function metadata(): array
     {
         $metadata = [];
+
+        if ($this->parentId) {
+            /** @var self|null $parent */
+            $parent = self::find()->id($this->parentId)->status(null)->one();
+            $metadata[Craft::t('stars', 'Reply To')] = $parent
+                ? Html::a(Html::encode($parent->getUiLabel()), $parent->getCpEditUrl())
+                : Craft::t('stars', 'Deleted comment');
+        }
 
         if ($this->authorEmail) {
             $metadata[Craft::t('stars', 'Email')] = Html::mailto($this->authorEmail);

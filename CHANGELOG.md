@@ -1,5 +1,26 @@
 # Changelog
 
+## 5.0.2 - 2026-08-04
+
+### Fixed
+- Every setting on the settings page rendered a bare warning icon with no text
+  next to it. The "overridden by config" macro returned the whitespace between
+  its own tags when a setting *wasn't* overridden, and Twig treats that
+  non-empty string as a real warning. Only genuinely overridden settings show a
+  warning now.
+
+### Changed
+- Reworked the Review and Comment editor screens. Every field used to be packed
+  into the sidebar, leaving the main body empty. The submission's own content —
+  rating, name, email, review/comment text, pros, cons, and admin response — now
+  renders in the body via an in-code field layout, laid out two-up where it
+  reads better. The sidebar keeps just what's *about* the submission: its
+  moderation status and the entry it belongs to, above the existing metadata.
+- Validation errors now appear inline on the field that caused them, instead of
+  only in the error banner.
+- A reply's parent comment is now shown in the Comment sidebar as a "Reply To"
+  link.
+
 ## 5.0.1 - 2026-08-04
 
 ### Fixed

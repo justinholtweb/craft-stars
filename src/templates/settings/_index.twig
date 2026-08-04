@@ -1,13 +1,22 @@
 {% import '_includes/forms' as forms %}
 
-{% macro configWarning(setting) -%}
-    {% set configArray = craft.app.config.getConfigFromFile('stars') %}
-    {% if configArray[setting] is defined -%}
-        {{ 'This is being overridden by the {setting} config setting in your {file} config file.'|t('stars', {
+{#
+    Returns the "overridden by config" warning for a setting, or an empty
+    string if it isn't overridden.
+
+    Every tag here trims its surrounding whitespace on purpose. Without that,
+    the un-overridden branch still returns the newline and indentation between
+    these tags, and Twig treats that non-empty string as a real warning — which
+    renders a bare ⚠ icon with no text beside every setting on the page.
+#}
+{%- macro configWarning(setting) -%}
+    {%- set configArray = craft.app.config.getConfigFromFile('stars') -%}
+    {%- if configArray is iterable and configArray[setting] is defined -%}
+        {{- 'This is being overridden by the {setting} config setting in your {file} config file.'|t('stars', {
             setting: setting,
             file: 'stars.php'
-        })|raw }}
-    {%- endif %}
+        })|raw -}}
+    {%- endif -%}
 {%- endmacro %}
 
 {% from _self import configWarning %}

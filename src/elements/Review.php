@@ -5,16 +5,21 @@ namespace justinholtweb\stars\elements;
 use Craft;
 use craft\elements\Entry;
 use craft\elements\db\ElementQueryInterface;
+use craft\fieldlayoutelements\TextareaField;
+use craft\fieldlayoutelements\TextField;
 use craft\helpers\Cp;
 use craft\helpers\Db;
 use craft\helpers\Html;
 use craft\helpers\UrlHelper;
+use craft\models\FieldLayout;
+use craft\models\FieldLayoutTab;
 use justinholtweb\stars\elements\actions\Approve;
 use justinholtweb\stars\elements\actions\BlockAuthor;
 use justinholtweb\stars\elements\actions\MarkAsSpam;
 use justinholtweb\stars\elements\actions\Reject;
 use justinholtweb\stars\elements\base\ModeratedElement;
 use justinholtweb\stars\elements\db\ReviewQuery;
+use justinholtweb\stars\fieldlayoutelements\RatingField;
 use justinholtweb\stars\Plugin;
 
 class Review extends ModeratedElement
@@ -30,6 +35,12 @@ class Review extends ModeratedElement
     public ?string $adminResponse = null;
     public ?string $adminResponseDate = null;
     public string $reviewStatus = 'pending';
+
+    /**
+     * The in-code editor field layout, built once per request.
+     * @see getFieldLayout()
+     */
+    private static ?FieldLayout $_starsFieldLayout = null;
 
     public static function displayName(): string
     {
@@ -256,41 +267,111 @@ class Review extends ModeratedElement
         return $rules;
     }
 
+    /**
+     * The review's own content is rendered in the editor's main body via an
+     * in-code field layout. Nothing here is persisted to project config —
+     * Craft only needs the layout to build the form.
+     *
+     * Craft asks for this on every chip it renders (index rows, breadcrumbs),
+     * so the layout is built once per request and shared.
+     */
+    public function getFieldLayout(): ?FieldLayout
+    {
+        if (self::$_starsFieldLayout !== null) {
+            return self::$_starsFieldLayout;
+        }
+
+        $settings = Plugin::getInstance()->getSettings();
+
+        $elements = [
+            new RatingField(['width' => 25]),
+            new TextField([
+                'attribute' => 'reviewerName',
+                'label' => Craft::t('stars', 'Reviewer Name'),
+                'required' => true,
+                'maxlength' => 255,
+                'width' => 50,
+            ]),
+            new TextField([
+                'attribute' => 'reviewerEmail',
+                'label' => Craft::t('stars', 'Reviewer Email'),
+                'inputType' => 'email',
+                'width' => 50,
+            ]),
+            new TextareaField([
+                'attribute' => 'reviewText',
+                'label' => Craft::t('stars', 'Review'),
+                'rows' => 6,
+            ]),
+        ];
+
+        if ($settings->enablePros) {
+            $elements[] = new TextareaField([
+                'attribute' => 'pros',
+                'label' => Craft::t('stars', 'Pros'),
+                'instructions' => Craft::t('stars', 'JSON array of strings, e.g. ["Great quality", "Fast shipping"]'),
+                'rows' => 3,
+                'width' => 50,
+            ]);
+        }
+
+        if ($settings->enableCons) {
+            $elements[] = new TextareaField([
+                'attribute' => 'cons',
+                'label' => Craft::t('stars', 'Cons'),
+                'instructions' => Craft::t('stars', 'JSON array of strings, e.g. ["Expensive", "Slow delivery"]'),
+                'rows' => 3,
+                'width' => 50,
+            ]);
+        }
+
+        if ($settings->enableAdminResponse) {
+            $elements[] = new TextareaField([
+                'attribute' => 'adminResponse',
+                'label' => Craft::t('stars', 'Admin Response'),
+                'instructions' => Craft::t('stars', 'Shown publicly alongside the review.'),
+                'rows' => 4,
+            ]);
+        }
+
+        $layout = new FieldLayout(['type' => static::class]);
+
+        $tab = new FieldLayoutTab([
+            'name' => Craft::t('stars', 'Review'),
+            'sortOrder' => 1,
+        ]);
+
+        // The tab must know its layout before it accepts elements, and the
+        // layout must know its tabs after they're populated.
+        $tab->setLayout($layout);
+        $tab->setElements($elements);
+        $layout->setTabs([$tab]);
+
+        return self::$_starsFieldLayout = $layout;
+    }
+
+    /**
+     * The sidebar keeps only what's *about* the review rather than part of it:
+     * its moderation status and the entry it belongs to.
+     */
     public function metaFieldsHtml(bool $static): string
     {
         $fields = [];
-        $settings = Plugin::getInstance()->getSettings();
 
-        // Rating selector
-        $ratingOptions = [];
-        for ($i = 1; $i <= $settings->maxRating; $i++) {
-            $ratingOptions[] = ['label' => str_repeat('★', $i) . str_repeat('☆', $settings->maxRating - $i) . " ({$i})", 'value' => $i];
-        }
-        $fields[] = Cp::selectFieldHtml([
-            'label' => Craft::t('stars', 'Rating'),
-            'id' => 'rating',
-            'name' => 'rating',
-            'value' => $this->rating,
-            'options' => $ratingOptions,
-            'required' => true,
-        ]);
-
-        // Status selector
-        $statusOptions = [
-            ['label' => Craft::t('stars', 'Pending'), 'value' => 'pending'],
-            ['label' => Craft::t('stars', 'Approved'), 'value' => 'approved'],
-            ['label' => Craft::t('stars', 'Rejected'), 'value' => 'rejected'],
-            ['label' => Craft::t('stars', 'Spam'), 'value' => 'spam'],
-        ];
         $fields[] = Cp::selectFieldHtml([
             'label' => Craft::t('stars', 'Status'),
             'id' => 'reviewStatus',
             'name' => 'reviewStatus',
             'value' => $this->reviewStatus,
-            'options' => $statusOptions,
+            'options' => [
+                ['label' => Craft::t('stars', 'Pending'), 'value' => 'pending'],
+                ['label' => Craft::t('stars', 'Approved'), 'value' => 'approved'],
+                ['label' => Craft::t('stars', 'Rejected'), 'value' => 'rejected'],
+                ['label' => Craft::t('stars', 'Spam'), 'value' => 'spam'],
+            ],
+            'disabled' => $static,
         ]);
 
-        // Entry selector
         $fields[] = Cp::elementSelectFieldHtml([
             'label' => Craft::t('stars', 'Entry'),
             'id' => 'entryId',
@@ -299,69 +380,8 @@ class Review extends ModeratedElement
             'elements' => $this->getEntry() ? [$this->getEntry()] : [],
             'limit' => 1,
             'single' => true,
+            'disabled' => $static,
         ]);
-
-        // Reviewer name
-        $fields[] = Cp::textFieldHtml([
-            'label' => Craft::t('stars', 'Reviewer Name'),
-            'id' => 'reviewerName',
-            'name' => 'reviewerName',
-            'value' => $this->reviewerName,
-            'required' => true,
-        ]);
-
-        // Reviewer email
-        $fields[] = Cp::textFieldHtml([
-            'label' => Craft::t('stars', 'Reviewer Email'),
-            'id' => 'reviewerEmail',
-            'name' => 'reviewerEmail',
-            'value' => $this->reviewerEmail,
-            'type' => 'email',
-        ]);
-
-        // Review text
-        $fields[] = Cp::textareaFieldHtml([
-            'label' => Craft::t('stars', 'Review Text'),
-            'id' => 'reviewText',
-            'name' => 'reviewText',
-            'value' => $this->reviewText,
-            'rows' => 5,
-        ]);
-
-        // Pros
-        if ($settings->enablePros) {
-            $fields[] = Cp::textareaFieldHtml([
-                'label' => Craft::t('stars', 'Pros'),
-                'id' => 'pros',
-                'name' => 'pros',
-                'value' => $this->pros,
-                'rows' => 3,
-                'instructions' => Craft::t('stars', 'JSON array of strings, e.g. ["Great quality", "Fast shipping"]'),
-            ]);
-        }
-
-        // Cons
-        if ($settings->enableCons) {
-            $fields[] = Cp::textareaFieldHtml([
-                'label' => Craft::t('stars', 'Cons'),
-                'id' => 'cons',
-                'name' => 'cons',
-                'value' => $this->cons,
-                'rows' => 3,
-                'instructions' => Craft::t('stars', 'JSON array of strings, e.g. ["Expensive", "Slow delivery"]'),
-            ]);
-        }
-
-        // Admin response
-        if ($settings->enableAdminResponse) {
-            $fields[] = Cp::textareaFieldHtml([
-                'label' => Craft::t('stars', 'Admin Response'),
-                'id' => 'adminResponse',
-                'name' => 'adminResponse',
-                'value' => $this->adminResponse,
-                'rows' => 3,
-            ]);
-        }
 
         return implode("\n", $fields) . parent::metaFieldsHtml($static);
     }
