@@ -109,10 +109,29 @@ abstract class ModeratedElement extends Element
 
     public function setAttributes($values, $safeOnly = true): void
     {
-        // Handle entryId from element select (posted as array)
-        if (isset($values['entryId']) && is_array($values['entryId'])) {
-            $values['entryId'] = reset($values['entryId']) ?: null;
+        if (array_key_exists('entryId', $values)) {
+            // The entry-select field's value may arrive as an array (a plain
+            // element select) or a scalar (Cp::elementSelectFieldHtml with
+            // `single: true`, which is what this field uses), depending on
+            // which of its two hidden inputs the request body kept.
+            $entryId = $values['entryId'];
+            if (is_array($entryId)) {
+                $entryId = reset($entryId) ?: null;
+            }
+            $entryId = ($entryId !== null && $entryId !== '') ? (int)$entryId : null;
+
+            // The field always submits a value, even when its selection never
+            // changed. If that comes back empty for an existing element that
+            // already has an entryId, treat it as the field being untouched
+            // rather than an explicit removal — an incidental empty
+            // submission here must never silently orphan the entry link.
+            if ($entryId === null && $this->id !== null && $this->entryId !== null) {
+                unset($values['entryId']);
+            } else {
+                $values['entryId'] = $entryId;
+            }
         }
+
         parent::setAttributes($values, $safeOnly);
     }
 

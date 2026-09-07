@@ -1,5 +1,19 @@
 # Changelog
 
+## 5.0.3 - 2026-09-07
+
+### Fixed
+- Adding an admin response (or making any other edit) to an existing review or
+  comment in the CP could silently clear its `entryId`, orphaning it from its
+  entry and dropping it from the frontend. The entry-select field's hidden
+  input round-trips through `setAttributes()` on every CP save, and an empty
+  submission there was written straight through as `null` with no validation
+  error. Frontend submission and the bulk moderation actions were never
+  affected — they don't go through this method — which is why only CP edits
+  showed the problem. An empty submission for an existing, already-linked
+  review or comment is now treated as the field being untouched rather than an
+  explicit removal, so its entry link survives. (#3)
+
 ## 5.0.2 - 2026-08-04
 
 ### Fixed
