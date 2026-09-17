@@ -1,5 +1,26 @@
 # Changelog
 
+## 5.1.0 - 2026-09-17
+
+### Added
+- All Twig variables now live under a single namespaced root: `craft.stars`.
+  Reviews are at `craft.stars.reviews.*` and comments at `craft.stars.comments.*`.
+
+### Changed
+- The plugin no longer takes over the top-level `craft.comments` (or
+  `craft.reviews`) variable when another plugin has already registered it.
+  `comments` is a name [verbb/comments](https://plugins.craftcms.com/comments)
+  has used for years, and because both plugins registered it on
+  `CraftVariable::EVENT_INIT`, whichever ran last won — installing Stars
+  alongside it silently replaced Verbb's API, 500ing its settings screen and any
+  site template calling `craft.comments.*`. Stars now only claims those names if
+  they're still free. (#4)
+
+### Deprecated
+- `craft.reviews` and `craft.comments` as top-level variables. They still work
+  where they aren't contested, but will be removed in 6.0.0 — move templates to
+  `craft.stars.reviews` / `craft.stars.comments`.
+
 ## 5.0.3 - 2026-09-07
 
 ### Fixed

@@ -22,6 +22,7 @@ use justinholtweb\stars\services\ReviewService;
 use justinholtweb\stars\services\SchemaService;
 use justinholtweb\stars\services\SpamService;
 use justinholtweb\stars\twig\CommentsVariable;
+use justinholtweb\stars\twig\ReviewsVariable;
 use justinholtweb\stars\twig\StarsVariable;
 use justinholtweb\stars\web\assets\cp\CpAsset;
 use yii\base\Event;
@@ -150,8 +151,19 @@ class Plugin extends BasePlugin
             CraftVariable::class,
             CraftVariable::EVENT_INIT,
             function (Event $event) {
-                $event->sender->set('reviews', StarsVariable::class);
-                $event->sender->set('comments', CommentsVariable::class);
+                $event->sender->set('stars', StarsVariable::class);
+
+                // Deprecated top-level aliases, kept so existing templates keep
+                // working. `comments` in particular is a name other plugins
+                // (verbb/comments) have claimed for years, so never clobber a
+                // variable someone else already registered — first one wins.
+                if (!$event->sender->has('reviews')) {
+                    $event->sender->set('reviews', ReviewsVariable::class);
+                }
+
+                if (!$event->sender->has('comments')) {
+                    $event->sender->set('comments', CommentsVariable::class);
+                }
             }
         );
     }

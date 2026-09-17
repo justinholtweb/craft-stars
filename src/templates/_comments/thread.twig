@@ -4,7 +4,7 @@
   Usage in a front-end template:
 
     {% import 'stars/_comments/thread' as commentThread %}
-    {{ commentThread.thread(craft.comments.tree(entry)) }}
+    {{ commentThread.thread(craft.stars.comments.tree(entry)) }}
 #}
 {% macro thread(comments) %}
     {% import _self as macros %}

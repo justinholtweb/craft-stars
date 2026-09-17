@@ -62,7 +62,7 @@ hCaptcha, Turnstile, selected by `CaptchaProviderFactory` from settings.
 ### Frontend
 
 - Controller actions: `stars/reviews/save` and `stars/comments/save` (anonymous POST allowed)
-- Twig variables: `craft.reviews` → `StarsVariable`, `craft.comments` → `CommentsVariable` (registered via `CraftVariable::EVENT_INIT`)
+- Twig variables: `craft.stars` → `StarsVariable`, exposing `craft.stars.reviews` → `ReviewsVariable` and `craft.stars.comments` → `CommentsVariable` (registered via `CraftVariable::EVENT_INIT`). The legacy top-level `craft.reviews` / `craft.comments` aliases are deprecated and are only registered when no other plugin has claimed the name (verbb/comments owns `comments`)
 - Supports both traditional form POST (redirect) and JSON API responses
 
 ## File Structure
@@ -79,7 +79,7 @@ src/
 │   └── actions/                # Bulk actions: Approve, Reject, MarkAsSpam
 ├── services/                   # ReviewService, SpamService, SchemaService, NotificationService
 ├── controllers/ReviewsController.php  # Frontend submission handler
-├── twig/StarsVariable.php      # craft.reviews Twig API
+├── twig/StarsVariable.php      # craft.stars Twig API root (reviews + comments)
 ├── templates/                  # CP layouts, element index, settings, email
 ├── web/assets/cp/              # CpAsset bundle with CSS/JS
 └── translations/en/stars.php   # English translations
@@ -135,7 +135,7 @@ When making changes, verify:
 4. Bulk actions work (approve, reject, spam)
 5. Frontend form POSTs to `actions/stars/reviews/save` successfully
 6. Spam checks work (honeypot, rate limit, submission time)
-7. `craft.reviews.forEntry()`, `.averageRating()`, `.count()`, `.distribution()`, `.schemaOrg()` return correct data
+7. `craft.stars.reviews.forEntry()`, `.averageRating()`, `.count()`, `.distribution()`, `.schemaOrg()` return correct data
 8. JSON-LD validates in Google Rich Results Test
 9. Email notifications fire on new review
 10. Permissions are enforced per level

@@ -102,9 +102,9 @@ form.addEventListener('submit', async (e) => {
 ### Displaying Reviews
 
 ```twig
-{% set reviews = craft.reviews.forEntry(entry).all() %}
-{% set avg = craft.reviews.averageRating(entry) %}
-{% set count = craft.reviews.count(entry) %}
+{% set reviews = craft.stars.reviews.forEntry(entry).all() %}
+{% set avg = craft.stars.reviews.averageRating(entry) %}
+{% set count = craft.stars.reviews.count(entry) %}
 
 {% if count > 0 %}
     <p>{{ avg|number_format(1) }} out of 5 ({{ count }} {{ count == 1 ? 'review' : 'reviews' }})</p>
@@ -146,7 +146,7 @@ form.addEventListener('submit', async (e) => {
 ### Rating Distribution
 
 ```twig
-{% set dist = craft.reviews.distribution(entry) %}
+{% set dist = craft.stars.reviews.distribution(entry) %}
 
 {% for stars, count in dist|reverse %}
     <div>{{ stars }} stars: {{ count }}</div>
@@ -158,20 +158,34 @@ form.addEventListener('submit', async (e) => {
 Place in your `<head>` to output valid JSON-LD for Google Rich Results:
 
 ```twig
-{{ craft.reviews.schemaOrg(entry)|raw }}
+{{ craft.stars.reviews.schemaOrg(entry)|raw }}
 ```
 
 ### Twig API Reference
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `craft.reviews.forEntry(entry)` | `ReviewQuery` | Approved reviews for an entry, newest first |
-| `craft.reviews.averageRating(entry)` | `float` | Average rating (approved only) |
-| `craft.reviews.count(entry)` | `int` | Count of approved reviews |
-| `craft.reviews.distribution(entry)` | `array` | `{1: n, 2: n, ...}` rating histogram |
-| `craft.reviews.schemaOrg(entry)` | `string` | JSON-LD `<script>` tag |
+| `craft.stars.reviews.forEntry(entry)` | `ReviewQuery` | Approved reviews for an entry, newest first |
+| `craft.stars.reviews.averageRating(entry)` | `float` | Average rating (approved only) |
+| `craft.stars.reviews.count(entry)` | `int` | Count of approved reviews |
+| `craft.stars.reviews.distribution(entry)` | `array` | `{1: n, 2: n, ...}` rating histogram |
+| `craft.stars.reviews.schemaOrg(entry)` | `string` | JSON-LD `<script>` tag |
 
 All methods accept an `Entry` object or an entry ID integer.
+
+#### Deprecated top-level variables
+
+Before 5.1.0 the plugin registered `craft.reviews` and `craft.comments`.
+`craft.comments` is also used by [verbb/comments][verbb-comments], so with both
+plugins installed one silently replaced the other. Everything now lives under
+`craft.stars`.
+
+The old names still work for existing templates, but only when no other plugin
+has claimed them — if verbb/comments is installed, it keeps `craft.comments` and
+Stars stays out of the way. Move to `craft.stars.reviews` /
+`craft.stars.comments`; the aliases will be removed in 6.0.0.
+
+[verbb-comments]: https://plugins.craftcms.com/comments
 
 ## Comments
 
@@ -207,18 +221,18 @@ moderation, spam protection, and login-gating as reviews.
 ### Displaying Comments
 
 The simplest way to render a full nested thread is the bundled recursive macro,
-fed by `craft.comments.tree(entry)`:
+fed by `craft.stars.comments.tree(entry)`:
 
 ```twig
 {% import 'stars/_comments/thread' as commentThread %}
-{{ commentThread.thread(craft.comments.tree(entry)) }}
+{{ commentThread.thread(craft.stars.comments.tree(entry)) }}
 ```
 
 Or build it yourself — each comment in the tree exposes its replies via
 `.children`:
 
 ```twig
-{% for comment in craft.comments.tree(entry) %}
+{% for comment in craft.stars.comments.tree(entry) %}
     <article class="comment">
         <strong>{{ comment.authorName }}</strong>
         <p>{{ comment.body }}</p>
@@ -236,15 +250,15 @@ Or build it yourself — each comment in the tree exposes its replies via
 Reply nesting is capped by the **Max Comment Depth** setting; deeper replies are
 automatically attached at the deepest allowed level.
 
-### `craft.comments` API
+### `craft.stars.comments` API
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `craft.comments.tree(entry)` | `Comment[]` | Approved comments as a nested tree (replies on `.children`) |
-| `craft.comments.forEntry(entry)` | `CommentQuery` | Approved comments for an entry, oldest first |
-| `craft.comments.topLevel(entry)` | `CommentQuery` | Approved top-level comments (no replies) |
-| `craft.comments.replies(comment)` | `array` | Approved replies to a comment |
-| `craft.comments.count(entry)` | `int` | Count of approved comments |
+| `craft.stars.comments.tree(entry)` | `Comment[]` | Approved comments as a nested tree (replies on `.children`) |
+| `craft.stars.comments.forEntry(entry)` | `CommentQuery` | Approved comments for an entry, oldest first |
+| `craft.stars.comments.topLevel(entry)` | `CommentQuery` | Approved top-level comments (no replies) |
+| `craft.stars.comments.replies(comment)` | `array` | Approved replies to a comment |
+| `craft.stars.comments.count(entry)` | `int` | Count of approved comments |
 
 ## Configuration
 

@@ -6,7 +6,7 @@ use Codeception\Test\Unit;
 use justinholtweb\stars\twig\CommentsVariable;
 
 /**
- * Covers the craft.comments Twig API.
+ * Covers the craft.stars.comments Twig API.
  */
 class CommentsVariableTest extends Unit
 {

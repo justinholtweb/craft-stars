@@ -9,7 +9,7 @@ use justinholtweb\stars\Plugin;
 use justinholtweb\stars\services\captcha\CaptchaProviderFactory;
 
 /**
- * `craft.comments` Twig API.
+ * `craft.stars.comments` Twig API.
  */
 class CommentsVariable
 {
