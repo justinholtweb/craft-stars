@@ -83,6 +83,7 @@ return [
     'Comments are disabled.' => 'Comments are disabled.',
     'You must be logged in to comment.' => 'You must be logged in to comment.',
     'Your submission was flagged as spam.' => 'Your submission was flagged as spam.',
+    'You posted here recently. Please wait a little while and try again.' => 'You posted here recently. Please wait a little while and try again.',
     'Your name is required.' => 'Your name is required.',
     'Max Comment Depth' => 'Max Comment Depth',
 

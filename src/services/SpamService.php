@@ -5,11 +5,17 @@ namespace justinholtweb\stars\services;
 use Craft;
 use craft\base\Component;
 use craft\db\Query;
+use craft\helpers\Db;
 use justinholtweb\stars\Plugin;
 use justinholtweb\stars\services\captcha\CaptchaProviderFactory;
 
 class SpamService extends Component
 {
+    public const FAILURE_HONEYPOT = 'honeypot';
+    public const FAILURE_CAPTCHA = 'captcha';
+    public const FAILURE_RATE_LIMIT = 'rateLimit';
+    public const FAILURE_SUBMISSION_TIME = 'submissionTime';
+
     /**
      * Run all spam checks. Returns true if the submission appears to be spam.
      *
@@ -18,25 +24,38 @@ class SpamService extends Component
      */
     public function isSpam(string $context = 'reviews'): bool
     {
+        return $this->check($context) !== null;
+    }
+
+    /**
+     * Run all spam checks and report the first one that failed, as one of the
+     * FAILURE_* constants, or null when the submission passes. Lets callers
+     * tell a person who posted recently apart from a bot.
+     *
+     * @param string $context Which submission type is being checked ('reviews'
+     *                        or 'comments') — determines the rate-limit table.
+     */
+    public function check(string $context = 'reviews'): ?string
+    {
         $settings = Plugin::getInstance()->getSettings();
 
         if ($settings->enableHoneypot && !$this->validateHoneypot()) {
-            return true;
+            return self::FAILURE_HONEYPOT;
         }
 
         if (!$this->validateCaptcha()) {
-            return true;
+            return self::FAILURE_CAPTCHA;
         }
 
         if (!$this->checkRateLimit($context)) {
-            return true;
+            return self::FAILURE_RATE_LIMIT;
         }
 
         if (!$this->validateSubmissionTime()) {
-            return true;
+            return self::FAILURE_SUBMISSION_TIME;
         }
 
-        return false;
+        return null;
     }
 
     /**
@@ -94,7 +113,8 @@ class SpamService extends Component
             return true;
         }
 
-        $cutoff = (new \DateTime())->modify("-{$settings->rateLimitMinutes} minutes")->format('Y-m-d H:i:s');
+        // dateCreated is stored in UTC, so the cutoff has to be too.
+        $cutoff = Db::prepareDateForDb(new \DateTime("-{$settings->rateLimitMinutes} minutes"));
 
         $query = (new Query())
             ->from($this->_tableForContext($context))

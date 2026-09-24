@@ -5,6 +5,7 @@ namespace justinholtweb\stars\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Entry;
+use craft\helpers\Db;
 use justinholtweb\stars\elements\Review;
 use justinholtweb\stars\Plugin;
 
@@ -133,7 +134,8 @@ class ReviewService extends Component
     public function saveAdminResponse(Review $review, string $response): bool
     {
         $review->adminResponse = $response;
-        $review->adminResponseDate = (new \DateTime())->format('Y-m-d H:i:s');
+        // Craft stores dates in UTC, and afterSave() reads a zone-less string as UTC.
+        $review->adminResponseDate = Db::prepareDateForDb(new \DateTime());
         return $this->saveReview($review);
     }
 }

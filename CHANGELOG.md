@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.1.1 - 2026-09-24
+
+### Fixed
+- The rate limiter compared a cutoff built in the site's timezone against
+  `dateCreated` values Craft stores in UTC, so the window was off by the site's
+  UTC offset. West of UTC it stretched (a 2-minute limit in New York lasted
+  about four hours, blocking readers from replying twice in a conversation);
+  east of UTC the cutoff landed in the future and nothing was ever limited. The
+  cutoff is now built in UTC.
+- A rate-limited submission was rejected with "Your submission was flagged as
+  spam." It now says "You posted here recently. Please wait a little while and
+  try again.", so a real person isn't told they look like a bot.
+- Admin responses saved their date as site-timezone time in a UTC column, so
+  the "Response Date" shown in the CP was off by the site's UTC offset. New
+  responses are stored in UTC; dates saved before this release keep the offset.
+
+### Added
+- `SpamService::check()` returns which spam check failed (one of the
+  `FAILURE_*` constants) or `null`. `isSpam()` still works and now wraps it.
+
 ## 5.1.0 - 2026-09-17
 
 ### Added

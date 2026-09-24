@@ -6,6 +6,7 @@ use Craft;
 use craft\web\Controller;
 use justinholtweb\stars\elements\Comment;
 use justinholtweb\stars\Plugin;
+use justinholtweb\stars\services\SpamService;
 use yii\web\ForbiddenHttpException;
 use yii\web\Response;
 
@@ -41,8 +42,11 @@ class CommentsController extends Controller
         }
 
         // Spam check (rate-limited against the comments table)
-        if (Plugin::getInstance()->spam->isSpam('comments')) {
-            return $this->_fail($request, Craft::t('stars', 'Your submission was flagged as spam.'));
+        $spamFailure = Plugin::getInstance()->spam->check('comments');
+        if ($spamFailure !== null) {
+            return $this->_fail($request, $spamFailure === SpamService::FAILURE_RATE_LIMIT
+                ? Craft::t('stars', 'You posted here recently. Please wait a little while and try again.')
+                : Craft::t('stars', 'Your submission was flagged as spam.'));
         }
 
         $comment = new Comment();

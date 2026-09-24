@@ -3,6 +3,10 @@
 namespace justinholtweb\stars\tests\unit;
 
 use Codeception\Test\Unit;
+use Craft;
+use craft\db\Query;
+use DateTime;
+use DateTimeZone;
 use justinholtweb\stars\Plugin;
 use justinholtweb\stars\services\ReviewService;
 
@@ -97,5 +101,29 @@ class ReviewServiceTest extends Unit
 
         self::assertTrue($this->reviews->markAsSpam($review));
         self::assertSame('spam', $review->reviewStatus);
+    }
+
+    public function testAdminResponseDateIsStoredInUtc(): void
+    {
+        // Craft stores dates in UTC. Saving "now" as a site-timezone string
+        // let it be read back as UTC, off by the site's offset.
+        $originalTimeZone = Craft::$app->getTimeZone();
+        Craft::$app->setTimeZone('America/New_York');
+
+        try {
+            $review = $this->createReview();
+            self::assertTrue($this->reviews->saveAdminResponse($review, 'Thanks!'));
+
+            $stored = (new Query())
+                ->select('adminResponseDate')
+                ->from('{{%stars_reviews}}')
+                ->where(['id' => $review->id])
+                ->scalar();
+
+            $storedUtc = new DateTime($stored, new DateTimeZone('UTC'));
+            self::assertLessThan(120, abs($storedUtc->getTimestamp() - time()));
+        } finally {
+            Craft::$app->setTimeZone($originalTimeZone);
+        }
     }
 }

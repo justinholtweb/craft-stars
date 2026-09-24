@@ -6,6 +6,7 @@ use Craft;
 use craft\web\Controller;
 use justinholtweb\stars\elements\Review;
 use justinholtweb\stars\Plugin;
+use justinholtweb\stars\services\SpamService;
 use yii\web\Response;
 
 class ReviewsController extends Controller
@@ -51,14 +52,19 @@ class ReviewsController extends Controller
         }
 
         // Spam check
-        if (Plugin::getInstance()->spam->isSpam()) {
+        $spamFailure = Plugin::getInstance()->spam->check();
+        if ($spamFailure !== null) {
+            $message = $spamFailure === SpamService::FAILURE_RATE_LIMIT
+                ? Craft::t('stars', 'You posted here recently. Please wait a little while and try again.')
+                : Craft::t('stars', 'Your submission was flagged as spam.');
+
             if ($request->getAcceptsJson()) {
                 return $this->asJson([
                     'success' => false,
-                    'error' => Craft::t('stars', 'Your submission was flagged as spam.'),
+                    'error' => $message,
                 ]);
             }
-            Craft::$app->getSession()->setError(Craft::t('stars', 'Your submission was flagged as spam.'));
+            Craft::$app->getSession()->setError($message);
             return null;
         }
 
