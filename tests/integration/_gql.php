@@ -19,6 +19,6 @@ Craft::$app->getConfig()->getGeneral()->enableGraphqlCaching = false;
 $scope = json_decode(base64_decode($argv[1] ?? ''), true) ?: [];
 $query = base64_decode($argv[2] ?? '');
 
-$result = Craft::$app->getGql()->executeQuery(new craft\models\GqlSchema(['name' => 'Stars check', 'scope' => $scope]), $query);
+$result = Craft::$app->getGql()->executeQuery(new craft\models\GqlSchema(['name' => 'Stars check', 'scope' => $scope, 'uid' => craft\helpers\StringHelper::UUID()]), $query);
 
 echo json_encode($result);
