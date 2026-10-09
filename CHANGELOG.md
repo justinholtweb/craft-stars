@@ -1,5 +1,39 @@
 # Changelog
 
+## Unreleased
+
+> {warning} If your Schema Item Type is `LocalBusiness`, `Organization` or `Restaurant` and the
+> entries being reviewed are *other* businesses (a directory or guide), turn on **Reviews Are About
+> Other Businesses** after updating, or the JSON-LD stops being printed.
+
+### Added
+- A **Stars Rating** field type. Each entry's average rating and review count are now stored, and
+  kept up to date as reviews are approved, rejected, edited, moved, deleted or restored. Add the
+  field to a layout and entries can be sorted by rating (`orderBy('rating DESC')`, or
+  `'rating.count'`), filtered by it (`.rating('>= 4')`, `.rating({average: '>= 4', count: '>= 3'})`),
+  shown and sorted in element indexes, and used in condition rules. The summary never re-saves the
+  entry, so moderation doesn't create entry revisions. Existing reviews are summarised by the update
+  migration.
+- `craft.stars.reviews.summary(entry)` returns the stored summary without the field.
+- `php craft stars/ratings/rebuild [--entry-id=…]` recomputes the stored summaries.
+- Read-only GraphQL: `starsReviews`, `starsReviewCount`, `starsComments` and `starsCommentCount`,
+  behind new "Query for approved reviews" and "Query for approved comments" schema components, and
+  `starsRating { average count maxRating }` on entries. Only approved items on live entries in
+  sections the schema can read are returned. Emails, IPs, user agents and referrers are never exposed.
+- **Add to Entry Pages Automatically** (`injectSchemaOrg`, off by default) adds the JSON-LD to the
+  head of each entry page with approved reviews, with no template change, and never twice.
+- `schemaOrg(entry, {type, limit})` takes per-call options, and `SchemaService::EVENT_DEFINE_SCHEMA`
+  lets you change or drop the JSON-LD per entry.
+- **Schema Review Limit** (`schemaReviewLimit`, default 10) caps the individual reviews in the JSON-LD.
+
+### Changed
+- The JSON-LD now follows Google's review-snippet rules. `LocalBusiness`, `Organization` and their
+  subtypes print nothing unless the new **Reviews Are About Other Businesses**
+  (`schemaThirdPartyReviews`) setting is on, because Google treats reviews a business hosts about
+  itself as self-serving. Reviews without a reviewer name are left out of the review list (they
+  still count towards the aggregate), and the list holds the newest 10 rather than every review.
+- The JSON-LD's aggregate rating is read from the stored summary.
+
 ## 5.1.1 - 2026-09-24
 
 ### Fixed

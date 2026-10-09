@@ -3,6 +3,7 @@
 namespace justinholtweb\stars\migrations;
 
 use craft\db\Migration;
+use justinholtweb\stars\services\RatingService;
 
 class Install extends Migration
 {
@@ -101,11 +102,35 @@ class Install extends Migration
         $this->addForeignKey(null, '{{%stars_blocklist}}', 'createdBy', '{{%elements}}', 'id', 'SET NULL', null);
         $this->createIndex(null, '{{%stars_blocklist}}', ['type', 'value'], true);
 
+        self::createRatingsTable($this);
+
         return true;
+    }
+
+    /**
+     * The stored rating summary per reviewed entry (see RatingService). Shared with the
+     * m261009_000000_add_ratings migration so the two can't drift.
+     */
+    public static function createRatingsTable(Migration $migration): void
+    {
+        $migration->createTable(RatingService::TABLE, [
+            'elementId' => $migration->integer()->notNull(),
+            'average' => $migration->decimal(5, 2)->notNull()->defaultValue(0),
+            'count' => $migration->integer()->notNull()->defaultValue(0),
+            'dateCreated' => $migration->dateTime()->notNull(),
+            'dateUpdated' => $migration->dateTime()->notNull(),
+            'uid' => $migration->uid(),
+            'PRIMARY KEY([[elementId]])',
+        ]);
+
+        $migration->addForeignKey(null, RatingService::TABLE, 'elementId', '{{%elements}}', 'id', 'CASCADE', null);
+        $migration->createIndex(null, RatingService::TABLE, 'average');
+        $migration->createIndex(null, RatingService::TABLE, 'count');
     }
 
     public function safeDown(): bool
     {
+        $this->dropTableIfExists(RatingService::TABLE);
         $this->dropTableIfExists('{{%stars_blocklist}}');
         $this->dropTableIfExists('{{%stars_comments}}');
         $this->dropTableIfExists('{{%stars_reviews}}');

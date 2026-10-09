@@ -25,7 +25,9 @@ php craft plugin/install stars
 - **Pluggable captcha** — reCAPTCHA v3, reCAPTCHA v2, hCaptcha, or Cloudflare Turnstile
 - **Spam protection** — honeypot, per-IP rate limiting, submission time check
 - **Login gating** — optionally require login (and auto-fill author details)
-- **Schema.org** — JSON-LD output with `Review` + `AggregateRating` markup
+- **Schema.org** — JSON-LD output with `Review` + `AggregateRating` markup, in the template or added to entry pages automatically, following Google's review-snippet rules
+- **Stars Rating field** — the stored average and count on the entry: sort and filter entries by rating, show it as an index column, use it in condition rules
+- **GraphQL** — read-only queries for approved reviews and comments, plus `starsRating` on every entry
 - **Email notifications** — new submissions to moderators, replies to comment authors
 - **User permissions** — separate permission tiers for reviews, comments, and the blocklist
 - **Bulk actions** — approve, reject, mark as spam, block author
@@ -159,7 +161,119 @@ Place in your `<head>` to output valid JSON-LD for Google Rich Results:
 
 ```twig
 {{ craft.stars.reviews.schemaOrg(entry)|raw }}
+
+{# Or with a different type for this section, and fewer reviews #}
+{{ craft.stars.reviews.schemaOrg(entry, { type: 'Course', limit: 5 })|raw }}
 ```
+
+Or turn on **Add to Entry Pages Automatically** (`injectSchemaOrg`) and Stars adds the JSON-LD just
+before `</head>` on every entry page that has approved reviews — the entry the URL matched, nothing
+else. A page that already calls `schemaOrg()` for that entry gets no second copy.
+
+What gets printed:
+
+- The item (`Product` by default — the **Schema Item Type** setting) with its name and URL.
+- `AggregateRating` from the stored summary (see [Stars Rating field](#stars-rating-field)).
+- The newest approved reviews, up to **Schema Review Limit** (default 10; 0 = the aggregate only).
+  Reviews without a reviewer name still count towards the aggregate but are left out of the list,
+  because Google requires an author name.
+- Nothing at all for an entry with no approved reviews.
+
+**Self-serving reviews.** Google does not show stars for reviews a business collects about itself,
+and treats marking them up as a guideline violation. So with `LocalBusiness`, `Organization` or one
+of their subtypes (`Restaurant`, `Store`, `Hotel`…), Stars prints nothing unless **Reviews Are About
+Other Businesses** (`schemaThirdPartyReviews`) is on — for a directory or guide reviewing businesses
+it doesn't own.
+
+To change the object per entry (a `brand`, an `sku`, a per-section type) or drop it, listen for
+`SchemaService::EVENT_DEFINE_SCHEMA`:
+
+```php
+use justinholtweb\stars\events\DefineSchemaEvent;
+use justinholtweb\stars\services\SchemaService;
+use yii\base\Event;
+
+Event::on(SchemaService::class, SchemaService::EVENT_DEFINE_SCHEMA, function(DefineSchemaEvent $event) {
+    if ($event->schema !== null && $event->entry->section->handle === 'courses') {
+        $event->schema['@type'] = 'Course';
+        $event->schema['provider'] = ['@type' => 'Organization', 'name' => 'Acme Academy'];
+    }
+});
+```
+
+### Stars Rating field
+
+`averageRating()` and `count()` work out the numbers from the reviews each time they're called, so
+they can't sort or filter a list of entries. Stars also keeps a **stored summary** per entry — the
+average and count of its approved reviews — updated whenever a review is approved, rejected, edited,
+moved, deleted or restored. Writing it never re-saves the entry, so moderation doesn't create entry
+revisions.
+
+Add a **Stars Rating** field to an entry type's field layout to use it. The field is read-only; it
+shows the summary on the entry's edit page, and can be an element index column and sort option.
+
+```twig
+{# Highest rated first #}
+{% set products = craft.entries.section('products').orderBy('rating DESC').all() %}
+
+{# Rated 4 or more #}
+{% set best = craft.entries.section('products').rating('>= 4').all() %}
+
+{# At least 3 reviews, averaging 4+ #}
+{% set trusted = craft.entries.section('products').rating({ average: '>= 4', count: '>= 3' }).all() %}
+
+{# Most reviewed #}
+{% set popular = craft.entries.section('products').orderBy('rating.count DESC').all() %}
+
+{{ entry.rating.average }} / {{ entry.rating.maxRating }} from {{ entry.rating.count }} reviews
+```
+
+(`rating` is whatever handle you gave the field.) Its value has `average`, `count`, `maxRating`,
+`rounded`, `percent` (for star-fill widths) and `hasReviews`. Entries with no approved reviews read
+an average and count of 0.
+
+The field also adds a condition rule — "Stars Rating is greater than or equal to 4" — wherever
+Craft builds entry conditions (custom sources, relation field conditions, Blitz refresh rules…).
+
+Without a field, `craft.stars.reviews.summary(entry)` reads the same stored summary.
+
+After importing reviews straight into the database, rebuild the summaries:
+
+```bash
+php craft stars/ratings/rebuild               # every entry
+php craft stars/ratings/rebuild --entry-id=42 # one entry
+```
+
+### GraphQL
+
+Stars adds two schema components under **Stars** in each GraphQL schema: **Query for approved
+reviews** (`stars.reviews:read`) and **Query for approved comments** (`stars.comments:read`).
+
+```graphql
+{
+  starsReviews(entryId: [42], orderBy: NEWEST, limit: 10) {
+    id rating reviewText reviewerName pros cons adminResponse adminResponseDate dateCreated
+  }
+  starsReviewCount(entryId: [42], minRating: 4)
+  starsComments(entryId: [42]) { id parentId authorName body dateCreated }
+  starsCommentCount(entryId: [42])
+  entries(section: "products") {
+    title
+    starsRating { average count maxRating }
+  }
+}
+```
+
+- Only **approved** reviews and comments are returned, and only for entries that are live and in a
+  section the schema can read — the same entries the token could fetch itself.
+- `starsReviews` takes `entryId`, `rating`, `minRating`, `maxRating`, `limit` (max 100), `offset`
+  and `orderBy` (`NEWEST`, `OLDEST`, `HIGHEST`, `LOWEST`). `starsComments` takes `entryId`,
+  `parentId`, `topLevel`, `limit`, `offset` and `orderBy` (`OLDEST`, `NEWEST`); build threads from
+  `parentId`.
+- Reviewer and commenter emails, IP addresses, user agents and referrers are never exposed.
+- `starsRating` on entries (and a Stars Rating field's own value) needs `stars.reviews:read`.
+- It is read-only. Submit reviews and comments through the `stars/reviews/save` and
+  `stars/comments/save` actions, which run the spam checks.
 
 ### Twig API Reference
 
@@ -169,7 +283,8 @@ Place in your `<head>` to output valid JSON-LD for Google Rich Results:
 | `craft.stars.reviews.averageRating(entry)` | `float` | Average rating (approved only) |
 | `craft.stars.reviews.count(entry)` | `int` | Count of approved reviews |
 | `craft.stars.reviews.distribution(entry)` | `array` | `{1: n, 2: n, ...}` rating histogram |
-| `craft.stars.reviews.schemaOrg(entry)` | `string` | JSON-LD `<script>` tag |
+| `craft.stars.reviews.summary(entry)` | `RatingSummary` | Stored average + count (one row, no aggregate) |
+| `craft.stars.reviews.schemaOrg(entry, options)` | `string` | JSON-LD `<script>` tag; options `type`, `limit` |
 
 All methods accept an `Entry` object or an entry ID integer.
 
@@ -296,6 +411,9 @@ return [
     // Schema.org
     'enableSchemaOrg' => true,
     'schemaItemType' => 'Product',      // Product, LocalBusiness, Book, etc.
+    'schemaThirdPartyReviews' => false, // Mark up LocalBusiness/Organization only when reviews are about other businesses
+    'schemaReviewLimit' => 10,          // Individual reviews in the JSON-LD. 0 = aggregate only
+    'injectSchemaOrg' => false,         // Add the JSON-LD to entry pages without a template change
 
     // Features
     'enablePros' => true,
@@ -360,4 +478,4 @@ migration), and exercises the services against a live database.
 - Review voting (helpful/not helpful)
 - Media attachments (photos)
 - Import/export tools
-- GraphQL support
+- GraphQL mutations for submissions

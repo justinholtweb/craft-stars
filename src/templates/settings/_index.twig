@@ -219,7 +219,7 @@
 
 {{ forms.lightswitchField({
     label: 'Enable Schema.org'|t('stars'),
-    instructions: 'Enable JSON-LD structured data output via craft.stars.reviews.schemaOrg().'|t('stars'),
+    instructions: 'Enable JSON-LD structured data output via craft.stars.reviews.schemaOrg(), or automatically (below).'|t('stars'),
     id: 'enableSchemaOrg',
     name: 'enableSchemaOrg',
     on: settings.enableSchemaOrg,
@@ -245,6 +245,36 @@
         { label: 'SoftwareApplication', value: 'SoftwareApplication' },
     ],
     warning: configWarning('schemaItemType'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Reviews Are About Other Businesses'|t('stars'),
+    instructions: 'Turn on only if the entries being reviewed are other businesses (a directory or guide). Google treats reviews a business collects about itself as self-serving, so LocalBusiness and Organization types get no rating markup unless this is on.'|t('stars'),
+    id: 'schemaThirdPartyReviews',
+    name: 'schemaThirdPartyReviews',
+    on: settings.schemaThirdPartyReviews,
+    warning: configWarning('schemaThirdPartyReviews'),
+}) }}
+
+{{ forms.textField({
+    label: 'Schema Review Limit'|t('stars'),
+    instructions: 'How many of the newest approved reviews to include alongside the aggregate rating. Set to 0 for the aggregate only.'|t('stars'),
+    id: 'schemaReviewLimit',
+    name: 'schemaReviewLimit',
+    value: settings.schemaReviewLimit,
+    type: 'number',
+    min: 0,
+    max: 100,
+    warning: configWarning('schemaReviewLimit'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Add to Entry Pages Automatically'|t('stars'),
+    instructions: 'Add the JSON-LD to the head of every entry page that has approved reviews, with no template change. Pages that already call craft.stars.reviews.schemaOrg() for that entry are left alone.'|t('stars'),
+    id: 'injectSchemaOrg',
+    name: 'injectSchemaOrg',
+    on: settings.injectSchemaOrg,
+    warning: configWarning('injectSchemaOrg'),
 }) }}
 
 <hr>

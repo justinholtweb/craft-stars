@@ -42,6 +42,10 @@ the nested tree from one flat query.
 - `{{%stars_comments}}` — same lifecycle, plus `parentId` (self-FK, SET NULL),
   `authorUserId`, and `commentStatus`.
 - `{{%stars_blocklist}}` — `type` (email/ip/user) + `value`, unique per pair.
+- `{{%stars_ratings}}` — stored rating summary per reviewed entry: `elementId` PK (FK→elements,
+  CASCADE), `average` decimal(5,2), `count`. Rewritten by `RatingService::refresh()` from
+  `Review::afterSave/afterDelete/afterRestore` (only when an approved review is involved, before
+  or after); never by saving the entry, so moderation creates no entry revisions.
 
 Fresh installs build all tables in `migrations/Install.php`; existing installs
 get incremental `mYYMMDD_*` migrations. `Plugin::$schemaVersion` tracks the DB
@@ -53,11 +57,29 @@ schema independently of the release version.
 - `Plugin::$comments` → `CommentService` — queries, threaded tree, moderation helpers
 - `Plugin::$spam` → `SpamService` — honeypot, captcha (via provider abstraction), rate limiting, submission time
 - `Plugin::$block` → `BlockService` — blocklist by email/IP/user
-- `Plugin::$schema` → `SchemaService` — JSON-LD generation
+- `Plugin::$schema` → `SchemaService` — JSON-LD generation (`getSchema()` / `generateJsonLd()`,
+  `EVENT_DEFINE_SCHEMA`, self-serving-type guard, optional `</head>` injection via
+  `View::EVENT_AFTER_RENDER_PAGE_TEMPLATE`, deduped against the template's own call)
+- `Plugin::$ratings` → `RatingService` — stored summaries (`refresh`, `rebuildAll`, `getSummary`,
+  `preload`, static `valueSql()` subquery used for field sorting/filtering)
 - `Plugin::$notifications` → `NotificationService` — email via Craft Mailer
 
 Captcha uses a provider abstraction (`services\captcha\*`): reCAPTCHA v2/v3,
 hCaptcha, Turnstile, selected by `CaptchaProviderFactory` from settings.
+
+### Stars Rating field, GraphQL, console
+
+- `fields\StarsRating` — read-only field; value is a `models\RatingSummary` read from
+  `stars_ratings` (canonical ID, batch-preloaded via `elementQueryResult`). `dbType()` is declared
+  only so Craft maps `handle` / `handle.count` for orderBy; `getValueSql()` and `queryCondition()`
+  point at the summary table; `serializeValue()` returns null. Condition rule:
+  `fields\conditions\StarsRatingConditionRule`.
+- GraphQL (`gql/`): plain object types `StarsReview`, `StarsComment`, `StarsRatingSummary` (not
+  Craft's element interface, so nothing private leaks); root queries in `StarsQueries`, gated by
+  `stars.reviews:read` / `stars.comments:read` and, in `StarsResolver`, by live entry + readable
+  section. `starsRating` is added to `EntryInterface` via `TypeManager::EVENT_DEFINE_GQL_TYPE_FIELDS`.
+  Read-only by design — no submission mutation.
+- `php craft stars/ratings/rebuild [--entry-id=N]`.
 
 ### Frontend
 
@@ -125,6 +147,13 @@ php craft clear-caches/all
 - Prefix private methods with underscore: `_registerElementTypes()`
 - Keep controllers thin — business logic goes in services
 - Use union types for entry params: `Entry|int $entry`
+
+## Integration checks
+
+```bash
+# Rating summaries, field, condition rule, GraphQL, JSON-LD (+ HTTP injection), in the harness
+docker exec -w /var/www/html ddev-plugin-testing-web php /var/www/craft-stars/tests/integration/checks.php
+```
 
 ## Testing Checklist
 

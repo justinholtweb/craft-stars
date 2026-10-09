@@ -437,6 +437,79 @@ class Review extends ModeratedElement
         ];
     }
 
+    /**
+     * The stored row as it was before this save, for working out which rating summaries move.
+     *
+     * @var array{entryId: int|null, reviewStatus: string}|null
+     */
+    private ?array $_starsPrevious = null;
+
+    public function beforeSave(bool $isNew): bool
+    {
+        if (!$isNew && $this->id !== null) {
+            $row = (new \craft\db\Query())
+                ->select(['entryId', 'reviewStatus'])
+                ->from('{{%stars_reviews}}')
+                ->where(['id' => $this->id])
+                ->one();
+
+            $this->_starsPrevious = $row ? [
+                'entryId' => $row['entryId'] !== null ? (int)$row['entryId'] : null,
+                'reviewStatus' => (string)$row['reviewStatus'],
+            ] : null;
+        }
+
+        return parent::beforeSave($isNew);
+    }
+
+    public function afterSave(bool $isNew): void
+    {
+        parent::afterSave($isNew);
+
+        // Only an approved review counts towards the summary, so only a save that touches an
+        // approved review — before or after — can move it. A pending review arriving costs nothing.
+        $entryIds = [];
+
+        if ($this->reviewStatus === 'approved' && $this->entryId !== null) {
+            $entryIds[] = $this->entryId;
+        }
+
+        if ($this->_starsPrevious !== null && $this->_starsPrevious['reviewStatus'] === 'approved' && $this->_starsPrevious['entryId'] !== null) {
+            $entryIds[] = $this->_starsPrevious['entryId'];
+        }
+
+        $this->_starsPrevious = null;
+        $this->_refreshRatings($entryIds);
+    }
+
+    public function afterDelete(): void
+    {
+        parent::afterDelete();
+
+        if ($this->reviewStatus === 'approved' && $this->entryId !== null) {
+            $this->_refreshRatings([$this->entryId]);
+        }
+    }
+
+    public function afterRestore(): void
+    {
+        parent::afterRestore();
+
+        if ($this->reviewStatus === 'approved' && $this->entryId !== null) {
+            $this->_refreshRatings([$this->entryId]);
+        }
+    }
+
+    /**
+     * @param int[] $entryIds
+     */
+    private function _refreshRatings(array $entryIds): void
+    {
+        foreach (array_unique($entryIds) as $entryId) {
+            Plugin::getInstance()->ratings->refresh($entryId);
+        }
+    }
+
     private function _renderStars(): string
     {
         $maxRating = Plugin::getInstance()->getSettings()->maxRating;

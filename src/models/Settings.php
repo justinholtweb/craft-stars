@@ -44,6 +44,24 @@ class Settings extends Model
     public bool $enableSchemaOrg = true;
     public string $schemaItemType = 'Product';
 
+    /**
+     * Add the JSON-LD to the `<head>` of the matched entry's page automatically, without a
+     * `schemaOrg()` call in the template.
+     */
+    public bool $injectSchemaOrg = false;
+
+    /**
+     * Most individual reviews to include in the JSON-LD (newest first). 0 = the aggregate only.
+     */
+    public int $schemaReviewLimit = 10;
+
+    /**
+     * The reviewed items are other businesses (a directory, a guide), not the site's owner. Only then
+     * are LocalBusiness/Organization types marked up — Google treats reviews a business hosts about
+     * itself as self-serving.
+     */
+    public bool $schemaThirdPartyReviews = false;
+
     // Features
     public bool $enablePros = true;
     public bool $enableCons = true;
@@ -63,10 +81,11 @@ class Settings extends Model
             [['rateLimitMinutes'], 'integer', 'min' => 0],
             [['minSubmissionTime'], 'integer', 'min' => 0],
             [['maxCommentDepth'], 'integer', 'min' => 1, 'max' => 10],
+            [['schemaReviewLimit'], 'integer', 'min' => 0, 'max' => 100],
             [['captchaProvider'], 'in', 'range' => ['none', 'recaptcha_v3', 'recaptcha_v2', 'hcaptcha', 'turnstile']],
             [['recaptchaThreshold'], 'number', 'min' => 0, 'max' => 1],
             [['captchaSiteKey', 'captchaSecretKey', 'recaptchaSiteKey', 'recaptchaSecretKey', 'notificationEmails', 'schemaItemType'], 'string'],
-            [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer', 'enableComments', 'commentsRequireLogin', 'commentsAllowAnonymous'], 'boolean'],
+            [['requireLogin', 'allowAnonymous', 'enableNotifications', 'enableHoneypot', 'enableRecaptcha', 'enableSchemaOrg', 'injectSchemaOrg', 'schemaThirdPartyReviews', 'enablePros', 'enableCons', 'enableAdminResponse', 'captureIpAddress', 'captureUserAgent', 'captureReferrer', 'enableComments', 'commentsRequireLogin', 'commentsAllowAnonymous'], 'boolean'],
         ];
     }
 }

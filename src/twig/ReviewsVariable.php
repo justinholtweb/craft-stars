@@ -5,6 +5,7 @@ namespace justinholtweb\stars\twig;
 use craft\elements\Entry;
 use justinholtweb\stars\elements\db\ReviewQuery;
 use justinholtweb\stars\elements\Review;
+use justinholtweb\stars\models\RatingSummary;
 use justinholtweb\stars\Plugin;
 use justinholtweb\stars\services\captcha\CaptchaProviderFactory;
 
@@ -51,9 +52,21 @@ class ReviewsVariable
     }
 
     /**
-     * Generate JSON-LD schema.org markup for an entry.
+     * The entry's stored rating summary (average + count of approved reviews) — one indexed row,
+     * where averageRating() and count() aggregate over the reviews on every call.
      */
-    public function schemaOrg(Entry $entry): string
+    public function summary(Entry|int $entry): RatingSummary
+    {
+        return Plugin::getInstance()->ratings->getSummary($entry);
+    }
+
+    /**
+     * Generate JSON-LD schema.org markup for an entry.
+     *
+     * @param array{type?: string, limit?: int} $options `type` overrides the Schema Item Type
+     * setting for this call (e.g. `{type: 'Course'}`); `limit` caps the individual reviews.
+     */
+    public function schemaOrg(Entry $entry, array $options = []): string
     {
         $settings = Plugin::getInstance()->getSettings();
 
@@ -61,7 +74,7 @@ class ReviewsVariable
             return '';
         }
 
-        return Plugin::getInstance()->schema->generateJsonLd($entry);
+        return Plugin::getInstance()->schema->generateJsonLd($entry, $options);
     }
 
     /**

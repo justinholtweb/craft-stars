@@ -5,19 +5,34 @@ namespace justinholtweb\stars;
 use Craft;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
+use craft\elements\Entry;
+use craft\events\DefineGqlTypeFieldsEvent;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterGqlQueriesEvent;
+use craft\events\RegisterGqlSchemaComponentsEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
+use craft\events\TemplateEvent;
+use craft\gql\TypeManager;
+use craft\helpers\Gql as GqlHelper;
 use craft\services\Elements;
+use craft\services\Fields;
+use craft\services\Gql;
 use craft\services\UserPermissions;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
+use craft\web\View;
+use GraphQL\Type\Definition\Type;
 use justinholtweb\stars\elements\Comment;
 use justinholtweb\stars\elements\Review;
+use justinholtweb\stars\fields\StarsRating;
+use justinholtweb\stars\gql\queries\StarsQueries;
+use justinholtweb\stars\gql\types\RatingSummaryType;
 use justinholtweb\stars\models\Settings;
 use justinholtweb\stars\services\BlockService;
 use justinholtweb\stars\services\CommentService;
 use justinholtweb\stars\services\NotificationService;
+use justinholtweb\stars\services\RatingService;
 use justinholtweb\stars\services\ReviewService;
 use justinholtweb\stars\services\SchemaService;
 use justinholtweb\stars\services\SpamService;
@@ -36,10 +51,11 @@ use yii\base\Event;
  * @property-read SchemaService $schema
  * @property-read NotificationService $notifications
  * @property-read BlockService $block
+ * @property-read RatingService $ratings
  */
 class Plugin extends BasePlugin
 {
-    public string $schemaVersion = '3.0.0';
+    public string $schemaVersion = '3.1.0';
     public bool $hasCpSettings = true;
     public bool $hasCpSection = true;
 
@@ -53,6 +69,7 @@ class Plugin extends BasePlugin
                 'schema' => SchemaService::class,
                 'notifications' => NotificationService::class,
                 'block' => BlockService::class,
+                'ratings' => RatingService::class,
             ],
         ];
     }
@@ -66,6 +83,9 @@ class Plugin extends BasePlugin
         $this->_registerVariables();
         $this->_registerPermissions();
         $this->_registerCpAssets();
+        $this->_registerFieldTypes();
+        $this->_registerGraphQl();
+        $this->_registerSchemaInjection();
     }
 
     public function getCpNavItem(): ?array
@@ -165,6 +185,73 @@ class Plugin extends BasePlugin
                     $event->sender->set('comments', CommentsVariable::class);
                 }
             }
+        );
+    }
+
+    private function _registerFieldTypes(): void
+    {
+        Event::on(
+            Fields::class,
+            Fields::EVENT_REGISTER_FIELD_TYPES,
+            function(RegisterComponentTypesEvent $event) {
+                $event->types[] = StarsRating::class;
+            }
+        );
+    }
+
+    /**
+     * Read-only GraphQL: `starsReviews`/`starsComments` (+ counts) behind their own schema
+     * components, and `starsRating` on every entry for schemas that may read reviews.
+     */
+    private function _registerGraphQl(): void
+    {
+        Event::on(
+            Gql::class,
+            Gql::EVENT_REGISTER_GQL_QUERIES,
+            function(RegisterGqlQueriesEvent $event) {
+                $event->queries = array_merge($event->queries, StarsQueries::getQueries());
+            }
+        );
+
+        Event::on(
+            Gql::class,
+            Gql::EVENT_REGISTER_GQL_SCHEMA_COMPONENTS,
+            function(RegisterGqlSchemaComponentsEvent $event) {
+                $event->queries[Craft::t('stars', 'Stars')] = [
+                    'stars.reviews:read' => ['label' => Craft::t('stars', 'Query for approved reviews')],
+                    'stars.comments:read' => ['label' => Craft::t('stars', 'Query for approved comments')],
+                ];
+            }
+        );
+
+        Event::on(
+            TypeManager::class,
+            TypeManager::EVENT_DEFINE_GQL_TYPE_FIELDS,
+            function(DefineGqlTypeFieldsEvent $event) {
+                if ($event->typeName !== 'EntryInterface' || !GqlHelper::canSchema('stars.reviews')) {
+                    return;
+                }
+
+                $event->fields['starsRating'] = [
+                    'name' => 'starsRating',
+                    'type' => Type::nonNull(RatingSummaryType::getType()),
+                    'description' => 'The average and count of the entry’s approved reviews.',
+                    'resolve' => fn(Entry $entry) => $this->ratings->getSummary($entry),
+                ];
+            }
+        );
+    }
+
+    private function _registerSchemaInjection(): void
+    {
+        if (!Craft::$app->getRequest()->getIsSiteRequest()) {
+            return;
+        }
+
+        Event::on(
+            View::class,
+            View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
+            fn(TemplateEvent $event) => $this->schema->injectIntoPage($event),
         );
     }
 
