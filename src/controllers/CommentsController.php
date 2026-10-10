@@ -3,7 +3,9 @@
 namespace justinholtweb\stars\controllers;
 
 use Craft;
+use craft\elements\Entry;
 use craft\web\Controller;
+use justinholtweb\stars\elements\base\ModeratedElement;
 use justinholtweb\stars\elements\Comment;
 use justinholtweb\stars\Plugin;
 use justinholtweb\stars\services\SpamService;
@@ -49,9 +51,28 @@ class CommentsController extends Controller
                 : Craft::t('stars', 'Your submission was flagged as spam.'));
         }
 
+        // A comment belongs to a live entry — not any element id that happens to exist.
+        $entryId = $request->getBodyParam('entryId');
+        if (!is_scalar($entryId) || !ctype_digit((string)$entryId) || !Entry::find()->id((int)$entryId)->status('live')->exists()) {
+            return $this->_fail($request, Craft::t('stars', 'That entry can’t be commented on.'));
+        }
+
         $comment = new Comment();
-        $comment->entryId = $request->getBodyParam('entryId') ?: null;
-        $comment->parentId = $request->getBodyParam('parentId') ?: null;
+        $comment->entryId = (int)$entryId;
+        // A reply goes under an approved comment on the same entry. Otherwise a reply could be hung
+        // off a comment on another entry, or one still in moderation — and its author emailed.
+        $parentId = $request->getBodyParam('parentId') ?: null;
+        if ($parentId !== null) {
+            if (!is_scalar($parentId) || !ctype_digit((string)$parentId) || !Comment::find()
+                ->id((int)$parentId)
+                ->entryId($comment->entryId)
+                ->commentStatus('approved')
+                ->status(null)
+                ->exists()) {
+                return $this->_fail($request, Craft::t('stars', 'That comment can’t be replied to.'));
+            }
+            $comment->parentId = (int)$parentId;
+        }
         $comment->body = $request->getBodyParam('body');
         $comment->commentStatus = $settings->defaultStatus;
 
@@ -68,7 +89,7 @@ class CommentsController extends Controller
         // Capture metadata — each is independently togglable for GDPR-style data minimization.
         $comment->ipAddress = $settings->captureIpAddress ? $request->getUserIP() : null;
         $comment->userAgent = $settings->captureUserAgent ? substr($request->getUserAgent() ?? '', 0, 512) : null;
-        $comment->submissionUrl = $settings->captureReferrer ? $request->getReferrer() : null;
+        $comment->submissionUrl = $settings->captureReferrer ? ModeratedElement::safeSubmissionUrl($request->getReferrer()) : null;
 
         // Anonymous check (guests only)
         if (!$user && !$settings->commentsAllowAnonymous && empty($comment->authorName)) {

@@ -79,4 +79,38 @@ class SchemaServiceTest extends Unit
         self::assertSame('Review', $data['review'][0]['@type']);
         self::assertSame('Person', $data['review'][0]['author']['@type']);
     }
+
+    public function testReviewTextCannotCloseTheScriptTag(): void
+    {
+        $host = $this->createReview(['reviewStatus' => 'pending']);
+        $this->createReview([
+            'entryId' => $host->id,
+            'reviewStatus' => 'approved',
+            'reviewerName' => '</script><script>alert(1)</script>',
+            'reviewText' => "It's <b>great</b> & \"cheap\"",
+        ]);
+
+        $html = $this->schema->generateJsonLd($this->makeEntry($host->id));
+
+        // One opening tag and one closing tag: the review's own `</script>` is escaped.
+        self::assertSame(1, substr_count(strtolower($html), '</script'));
+        self::assertStringNotContainsString('<script>alert', $html);
+
+        // …and the JSON still decodes to what was written.
+        preg_match('#<script[^>]*>(.*)</script>#s', $html, $m);
+        $data = Json::decode($m[1]);
+        self::assertStringContainsString('</script><script>alert(1)</script>', json_encode($data, JSON_UNESCAPED_SLASHES));
+    }
+
+    public function testTheVariablePrintsWithoutRaw(): void
+    {
+        $host = $this->createReview(['reviewStatus' => 'pending']);
+        $this->createReview(['entryId' => $host->id, 'reviewStatus' => 'approved']);
+        $settings = Plugin::getInstance()->getSettings();
+        $settings->enableSchemaOrg = true;
+
+        $out = \Craft::$app->getView()->renderString('{{ craft.stars.reviews.schemaOrg(entry) }}', ['entry' => $this->makeEntry($host->id)]);
+
+        self::assertStringContainsString('<script type="application/ld+json">', $out);
+    }
 }

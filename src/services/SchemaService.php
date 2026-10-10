@@ -58,7 +58,11 @@ class SchemaService extends Component
 
         $this->_rendered[(int)$entry->getCanonicalId()] = true;
 
-        $json = Json::encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        // Review text and names are visitors' words inside a <script> element: `</script>` in
+        // one ended the element and ran whatever followed on every page showing the reviews.
+        // The HEX flags encode < > & ' " as \u003C and friends, which JSON-LD reads identically.
+        $json = Json::encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT
+            | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
         return '<script type="application/ld+json">' . $json . '</script>';
     }
 

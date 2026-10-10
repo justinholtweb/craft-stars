@@ -31,6 +31,9 @@ class SpamServiceTest extends Unit
     {
         $this->spam = Plugin::getInstance()->spam;
         $this->originalTimeZone = Craft::$app->getTimeZone();
+        // The hourly address budget lives in the cache and would carry across tests and runs;
+        // its own tests turn it back on.
+        Plugin::getInstance()->getSettings()->maxSubmissionsPerHour = 0;
     }
 
     protected function _after(): void
@@ -57,6 +60,7 @@ class SpamServiceTest extends Unit
         $request = Stub::makeEmpty(Request::class, [
             'getBodyParam' => fn($name, $defaultValue = null) => $bodyParams[$name] ?? $defaultValue,
             'getUserIP' => $ip,
+            'getRemoteIP' => $ip,
         ]);
 
         Craft::$app->set('request', $request);
@@ -184,5 +188,64 @@ class SpamServiceTest extends Unit
         $this->fakeRequest(['starsHoneypot' => '', '__stars_ts' => time() - 10], '198.51.100.77');
         self::assertNull($this->spam->check());
         self::assertFalse($this->spam->isSpam());
+    }
+
+    public function testAddressBudgetRefusesOnceSpentAcrossEntries(): void
+    {
+        $ip = '192.0.2.' . random_int(1, 254);
+        Craft::$app->getCache()->delete(sprintf('stars:budget:%s:%d', sha1($ip), intdiv(time(), 3600)));
+        Plugin::getInstance()->getSettings()->maxSubmissionsPerHour = 3;
+
+        // A different entry each time — the per-entry limit never fires; this one does.
+        foreach ([101, 102, 103] as $entryId) {
+            $this->fakeRequest(['entryId' => $entryId], $ip);
+            self::assertTrue($this->spam->checkAddressBudget(), "submission for entry $entryId");
+        }
+
+        $this->fakeRequest(['entryId' => 104], $ip);
+        self::assertFalse($this->spam->checkAddressBudget());
+
+        // Another address has its own budget.
+        $this->fakeRequest(['entryId' => 104], '192.0.2.255');
+        Craft::$app->getCache()->delete(sprintf('stars:budget:%s:%d', sha1('192.0.2.255'), intdiv(time(), 3600)));
+        self::assertTrue($this->spam->checkAddressBudget());
+    }
+
+    public function testAddressBudgetHoldsWithIpCaptureOff(): void
+    {
+        $ip = '192.0.2.' . random_int(1, 254);
+        Craft::$app->getCache()->delete(sprintf('stars:budget:%s:%d', sha1($ip), intdiv(time(), 3600)));
+        $settings = Plugin::getInstance()->getSettings();
+        $settings->maxSubmissionsPerHour = 1;
+        $settings->captureIpAddress = false;
+        $settings->minSubmissionTime = 0;
+
+        try {
+            $this->fakeRequest(['starsHoneypot' => ''], $ip);
+            self::assertNull($this->spam->check());
+            self::assertSame(SpamService::FAILURE_RATE_LIMIT, $this->spam->check());
+        } finally {
+            $settings->captureIpAddress = true;
+        }
+    }
+
+    public function testAddressBudgetCanBeTurnedOff(): void
+    {
+        Plugin::getInstance()->getSettings()->maxSubmissionsPerHour = 0;
+        $this->fakeRequest([], '192.0.2.9');
+
+        for ($i = 0; $i < 20; $i++) {
+            self::assertTrue($this->spam->checkAddressBudget());
+        }
+    }
+
+    public function testIpv6AddressesAreChargedByTheirSlash64(): void
+    {
+        $this->fakeRequest([], '2001:db8:1:2:aaaa::1');
+        $first = SpamService::address();
+        $this->fakeRequest([], '2001:db8:1:2:bbbb::9');
+
+        self::assertSame('2001:db8:1:2::/64', $first);
+        self::assertSame($first, SpamService::address());
     }
 }

@@ -4,8 +4,8 @@ namespace justinholtweb\stars\elements;
 
 use Craft;
 use craft\db\Query;
-use craft\elements\Entry;
 use craft\elements\db\ElementQueryInterface;
+use craft\elements\Entry;
 use craft\fieldlayoutelements\TextareaField;
 use craft\fieldlayoutelements\TextField;
 use craft\helpers\Cp;
@@ -71,6 +71,9 @@ class Comment extends ModeratedElement
         return 'commentStatus';
     }
 
+    /**
+     * @return CommentQuery
+     */
     public static function find(): ElementQueryInterface
     {
         return new CommentQuery(static::class);
@@ -354,11 +357,7 @@ class Comment extends ModeratedElement
         }
 
         if ($this->submissionUrl) {
-            $metadata[Craft::t('stars', 'Submission URL')] = Html::a(
-                Html::encode(StringHelper::truncate($this->submissionUrl, 50)),
-                $this->submissionUrl,
-                ['target' => '_blank', 'rel' => 'noopener']
-            );
+            $metadata[Craft::t('stars', 'Submission URL')] = $this->submissionUrlHtml();
         }
 
         return $metadata;

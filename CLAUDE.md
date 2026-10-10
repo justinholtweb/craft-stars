@@ -148,12 +148,23 @@ php craft clear-caches/all
 - Keep controllers thin — business logic goes in services
 - Use union types for entry params: `Entry|int $entry`
 
-## Integration checks
+## Automated tests
 
 ```bash
+# Unit (Codeception, in this repo's own DDEV project)
+docker exec -w /var/www/html ddev-craft-stars-web vendor/bin/codecept run unit        # 84
+# Anonymous submissions over HTTP, in the shared plugin-testing harness
+docker exec -w /var/www/html ddev-plugin-testing-web php /var/www/craft-stars/tests/harness/security.php   # 13
 # Rating summaries, field, condition rule, GraphQL, JSON-LD (+ HTTP injection), in the harness
 docker exec -w /var/www/html ddev-plugin-testing-web php /var/www/craft-stars/tests/integration/checks.php
+# Static analysis (phpstan-runner)
+docker exec -w /sites/craft-stars ddev-phpstan-runner-web bash -c 'vendor/bin/phpstan analyse --memory-limit=1G && vendor/bin/ecs check'
 ```
+
+The submission controllers are the anonymous surface: entry and reply-parent checks, the rating
+check and the referrer filter live there, and the hourly address budget (`SpamService::
+checkAddressBudget()`) is cache-backed so it holds with IP capture off. `SpamService::address()`
+only believes `X-Forwarded-For` once `trustedHosts` is configured.
 
 ## Testing Checklist
 

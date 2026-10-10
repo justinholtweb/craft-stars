@@ -23,6 +23,12 @@ class Settings extends Model
     public int $rateLimitMinutes = 1440;
     public int $minSubmissionTime = 3;
 
+    /**
+     * Submissions (reviews and comments together) one address may make in an hour, across every
+     * entry. 0 turns the budget off.
+     */
+    public int $maxSubmissionsPerHour = 10;
+
     // Captcha
     public string $captchaProvider = 'none'; // none | recaptcha_v3 | recaptcha_v2 | hcaptcha | turnstile
     public string $captchaSiteKey = '';
@@ -80,6 +86,7 @@ class Settings extends Model
             [['maxRating'], 'integer', 'min' => 1, 'max' => 10],
             [['rateLimitMinutes'], 'integer', 'min' => 0],
             [['minSubmissionTime'], 'integer', 'min' => 0],
+            [['maxSubmissionsPerHour'], 'integer', 'min' => 0],
             [['maxCommentDepth'], 'integer', 'min' => 1, 'max' => 10],
             [['schemaReviewLimit'], 'integer', 'min' => 0, 'max' => 100],
             [['captchaProvider'], 'in', 'range' => ['none', 'recaptcha_v3', 'recaptcha_v2', 'hcaptcha', 'turnstile']],

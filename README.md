@@ -23,7 +23,7 @@ php craft plugin/install stars
 - **Admin responses** — reply to reviews from the CP with timestamp
 - **Blocklist** — block submitters by email, IP, or user id
 - **Pluggable captcha** — reCAPTCHA v3, reCAPTCHA v2, hCaptcha, or Cloudflare Turnstile
-- **Spam protection** — honeypot, per-IP rate limiting, submission time check
+- **Spam protection** — honeypot, per-entry and hourly per-address rate limits, submission time check
 - **Login gating** — optionally require login (and auto-fill author details)
 - **Schema.org** — JSON-LD output with `Review` + `AggregateRating` markup, in the template or added to entry pages automatically, following Google's review-snippet rules
 - **Stars Rating field** — the stored average and count on the entry: sort and filter entries by rating, show it as an index column, use it in condition rules
@@ -160,11 +160,14 @@ form.addEventListener('submit', async (e) => {
 Place in your `<head>` to output valid JSON-LD for Google Rich Results:
 
 ```twig
-{{ craft.stars.reviews.schemaOrg(entry)|raw }}
+{{ craft.stars.reviews.schemaOrg(entry) }}
 
 {# Or with a different type for this section, and fewer reviews #}
-{{ craft.stars.reviews.schemaOrg(entry, { type: 'Course', limit: 5 })|raw }}
+{{ craft.stars.reviews.schemaOrg(entry, { type: 'Course', limit: 5 }) }}
 ```
+
+It returns markup, so `|raw` isn't needed (templates that still have it keep working). Review text is
+escaped so it can't close the `<script>` tag.
 
 Or turn on **Add to Entry Pages Automatically** (`injectSchemaOrg`) and Stars adds the JSON-LD just
 before `</head>` on every entry page that has approved reviews — the entry the URL matched, nothing
@@ -284,7 +287,7 @@ reviews** (`stars.reviews:read`) and **Query for approved comments** (`stars.com
 | `craft.stars.reviews.count(entry)` | `int` | Count of approved reviews |
 | `craft.stars.reviews.distribution(entry)` | `array` | `{1: n, 2: n, ...}` rating histogram |
 | `craft.stars.reviews.summary(entry)` | `RatingSummary` | Stored average + count (one row, no aggregate) |
-| `craft.stars.reviews.schemaOrg(entry, options)` | `string` | JSON-LD `<script>` tag; options `type`, `limit` |
+| `craft.stars.reviews.schemaOrg(entry, options)` | `Markup` | JSON-LD `<script>` tag; options `type`, `limit` |
 
 All methods accept an `Entry` object or an entry ID integer.
 
@@ -401,10 +404,11 @@ return [
     'recaptchaSiteKey' => '$RECAPTCHA_SITE_KEY',
     'recaptchaSecretKey' => '$RECAPTCHA_SECRET_KEY',
     'rateLimitMinutes' => 1440,         // Per IP+entry. 0 = disabled
+    'maxSubmissionsPerHour' => 10,      // Per address, across every entry. 0 = disabled
     'minSubmissionTime' => 3,           // Seconds. 0 = disabled
 
     // Privacy — disable to avoid storing each piece of metadata
-    'captureIpAddress' => true,         // Required for the per-IP rate limiter
+    'captureIpAddress' => true,         // Required for the per-entry limit (the hourly one doesn't store IPs)
     'captureUserAgent' => true,
     'captureReferrer' => true,
 

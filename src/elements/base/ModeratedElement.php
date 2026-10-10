@@ -165,4 +165,36 @@ abstract class ModeratedElement extends Element
 
         parent::afterSave($isNew);
     }
+
+    /**
+     * The page a submission came from, if it is an http(s) URL — or null.
+     *
+     * It is the browser's Referer header, which a script sets to anything it likes. Before 5.1.2 it
+     * was linked in the control panel as given, so a `javascript:` "URL" ran in the moderator's
+     * session when they clicked it.
+     */
+    public static function safeSubmissionUrl(?string $url): ?string
+    {
+        $url = trim((string)$url);
+
+        if ($url === '' || strlen($url) > 2048 || !preg_match('#^https?://#i', $url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        return $url;
+    }
+
+    /**
+     * The submission URL for the element's metadata: a link when it is a web address, plain text
+     * when an older row holds something else.
+     */
+    protected function submissionUrlHtml(): string
+    {
+        $safe = static::safeSubmissionUrl($this->submissionUrl);
+        $label = \craft\helpers\Html::encode(\craft\helpers\StringHelper::truncate((string)$this->submissionUrl, 50));
+
+        return $safe !== null
+            ? \craft\helpers\Html::a($label, $safe, ['target' => '_blank', 'rel' => 'noopener noreferrer'])
+            : $label;
+    }
 }

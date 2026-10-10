@@ -52,6 +52,7 @@ use yii\base\Event;
  * @property-read NotificationService $notifications
  * @property-read BlockService $block
  * @property-read RatingService $ratings
+ * @method Settings getSettings()
  */
 class Plugin extends BasePlugin
 {
@@ -140,7 +141,7 @@ class Plugin extends BasePlugin
         Event::on(
             Elements::class,
             Elements::EVENT_REGISTER_ELEMENT_TYPES,
-            function (RegisterComponentTypesEvent $event) {
+            function(RegisterComponentTypesEvent $event) {
                 $event->types[] = Review::class;
                 $event->types[] = Comment::class;
             }
@@ -152,7 +153,7 @@ class Plugin extends BasePlugin
         Event::on(
             UrlManager::class,
             UrlManager::EVENT_REGISTER_CP_URL_RULES,
-            function (RegisterUrlRulesEvent $event) {
+            function(RegisterUrlRulesEvent $event) {
                 $event->rules['stars'] = ['template' => 'stars/reviews/_index'];
                 $event->rules['stars/reviews'] = ['template' => 'stars/reviews/_index'];
                 $event->rules['stars/reviews/new'] = 'elements/edit';
@@ -170,7 +171,7 @@ class Plugin extends BasePlugin
         Event::on(
             CraftVariable::class,
             CraftVariable::EVENT_INIT,
-            function (Event $event) {
+            function(Event $event) {
                 $event->sender->set('stars', StarsVariable::class);
 
                 // Deprecated top-level aliases, kept so existing templates keep
@@ -267,7 +268,7 @@ class Plugin extends BasePlugin
         Event::on(
             UserPermissions::class,
             UserPermissions::EVENT_REGISTER_PERMISSIONS,
-            function (RegisterUserPermissionsEvent $event) {
+            function(RegisterUserPermissionsEvent $event) {
                 $event->permissions[] = [
                     'heading' => Craft::t('stars', 'Stars'),
                     'permissions' => [

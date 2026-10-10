@@ -3,11 +3,13 @@
 namespace justinholtweb\stars\twig;
 
 use craft\elements\Entry;
+use craft\helpers\Template;
 use justinholtweb\stars\elements\db\ReviewQuery;
 use justinholtweb\stars\elements\Review;
 use justinholtweb\stars\models\RatingSummary;
 use justinholtweb\stars\Plugin;
 use justinholtweb\stars\services\captcha\CaptchaProviderFactory;
+use Twig\Markup;
 
 /**
  * `craft.stars.reviews` Twig API.
@@ -66,15 +68,17 @@ class ReviewsVariable
      * @param array{type?: string, limit?: int} $options `type` overrides the Schema Item Type
      * setting for this call (e.g. `{type: 'Course'}`); `limit` caps the individual reviews.
      */
-    public function schemaOrg(Entry $entry, array $options = []): string
+    public function schemaOrg(Entry $entry, array $options = []): Markup
     {
         $settings = Plugin::getInstance()->getSettings();
 
         if (!$settings->enableSchemaOrg) {
-            return '';
+            return Template::raw('');
         }
 
-        return Plugin::getInstance()->schema->generateJsonLd($entry, $options);
+        // Markup, so `{{ craft.stars.reviews.schemaOrg(entry) }}` prints it without `|raw` —
+        // the encoding is done, and `|raw` on it is harmless.
+        return Template::raw(Plugin::getInstance()->schema->generateJsonLd($entry, $options));
     }
 
     /**

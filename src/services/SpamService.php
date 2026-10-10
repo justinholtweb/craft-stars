@@ -47,7 +47,7 @@ class SpamService extends Component
             return self::FAILURE_CAPTCHA;
         }
 
-        if (!$this->checkRateLimit($context)) {
+        if (!$this->checkRateLimit($context) || !$this->checkAddressBudget()) {
             return self::FAILURE_RATE_LIMIT;
         }
 
@@ -127,6 +127,68 @@ class SpamService extends Component
 
         // count() can return a numeric string; cast before comparing.
         return (int)$query->count() === 0;
+    }
+
+    /**
+     * The hourly budget for one address, across every entry and both submission types. Returns
+     * false once it is spent.
+     *
+     * checkRateLimit() is per entry and reads the IP stored on each row, so it stops nothing when IP
+     * capture is off, and a script could post to every entry on the site in turn. This one is kept
+     * in the cache, so it holds whatever the privacy settings are, and it counts the attempt — a
+     * submission that is later refused still spends from it.
+     */
+    public function checkAddressBudget(): bool
+    {
+        $limit = Plugin::getInstance()->getSettings()->maxSubmissionsPerHour;
+
+        if ($limit <= 0) {
+            return true;
+        }
+
+        $key = sprintf('stars:budget:%s:%d', sha1(self::address()), intdiv(time(), 3600));
+        $mutex = Craft::$app->getMutex();
+
+        // Under a lock, or parallel requests all read the same count. A busy lock refuses.
+        if (!$mutex->acquire($key, 2)) {
+            return false;
+        }
+
+        try {
+            $cache = Craft::$app->getCache();
+            $count = (int)$cache->get($key);
+
+            if ($count >= $limit) {
+                return false;
+            }
+
+            $cache->set($key, $count + 1, 3700);
+
+            return true;
+        } finally {
+            $mutex->release($key);
+        }
+    }
+
+    /**
+     * The address a submission is charged to.
+     *
+     * Craft trusts every host by default (`trustedHosts` is `['any']`), which makes
+     * `X-Forwarded-For` something any client sets — a new value per request and a budget never
+     * runs out. So the forwarded address is believed only once a site has said which proxies to
+     * trust. An IPv6 address is charged by its /64, since one machine is routinely given a whole one.
+     */
+    public static function address(): string
+    {
+        $request = Craft::$app->getRequest();
+        $trusted = Craft::$app->getConfig()->getGeneral()->trustedHosts;
+        $ip = (string)($trusted === ['any'] ? $request->getRemoteIP() : $request->getUserIP());
+
+        if (str_contains($ip, ':') && ($packed = @inet_pton($ip)) !== false) {
+            return inet_ntop(substr($packed, 0, 8) . str_repeat("\0", 8)) . '/64';
+        }
+
+        return $ip;
     }
 
     /**

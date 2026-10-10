@@ -3,7 +3,9 @@
 namespace justinholtweb\stars\controllers;
 
 use Craft;
+use craft\elements\Entry;
 use craft\web\Controller;
+use justinholtweb\stars\elements\base\ModeratedElement;
 use justinholtweb\stars\elements\Review;
 use justinholtweb\stars\Plugin;
 use justinholtweb\stars\services\SpamService;
@@ -68,10 +70,23 @@ class ReviewsController extends Controller
             return null;
         }
 
+        // A review belongs to a live entry. Without this, any element id — an unpublished entry, a
+        // user, an asset — could be posted against.
+        $entryId = $this->_liveEntryId($request->getBodyParam('entryId'));
+        if ($entryId === null) {
+            return $this->_fail(Craft::t('stars', 'That entry can’t be reviewed.'));
+        }
+
+        // A missing rating is an error, not the top mark: before 5.1.2 it defaulted to maxRating.
+        $rating = $request->getBodyParam('rating');
+        if (!is_scalar($rating) || !ctype_digit(trim((string)$rating))) {
+            return $this->_fail(Craft::t('stars', 'Please choose a rating.'));
+        }
+
         // Build the review element
         $review = new Review();
-        $review->entryId = $request->getBodyParam('entryId') ?: null;
-        $review->rating = (int)($request->getBodyParam('rating') ?: $settings->maxRating);
+        $review->entryId = $entryId;
+        $review->rating = (int)$rating;
         $review->reviewText = $request->getBodyParam('reviewText');
         $review->reviewerName = $request->getBodyParam('reviewerName') ?: '';
         $review->reviewerEmail = $request->getBodyParam('reviewerEmail');
@@ -95,7 +110,7 @@ class ReviewsController extends Controller
         // Capture metadata — each is independently togglable for GDPR-style data minimization.
         $review->ipAddress = $settings->captureIpAddress ? $request->getUserIP() : null;
         $review->userAgent = $settings->captureUserAgent ? substr($request->getUserAgent() ?? '', 0, 512) : null;
-        $review->submissionUrl = $settings->captureReferrer ? $request->getReferrer() : null;
+        $review->submissionUrl = $settings->captureReferrer ? ModeratedElement::safeSubmissionUrl($request->getReferrer()) : null;
 
         // Anonymous check
         if (!$settings->allowAnonymous && empty($review->reviewerName)) {
@@ -135,5 +150,33 @@ class ReviewsController extends Controller
 
         Craft::$app->getSession()->setNotice(Craft::t('stars', 'Review saved.'));
         return $this->redirectToPostedUrl($review);
+    }
+
+    /**
+     * The id of a live entry, or null.
+     */
+    private function _liveEntryId(mixed $entryId): ?int
+    {
+        if (!is_scalar($entryId) || !ctype_digit((string)$entryId)) {
+            return null;
+        }
+
+        return Entry::find()->id((int)$entryId)->status('live')->exists() ? (int)$entryId : null;
+    }
+
+    /**
+     * Return a JSON error for API requests, or set a session error for form posts.
+     */
+    private function _fail(string $message): ?Response
+    {
+        if (Craft::$app->getRequest()->getAcceptsJson()) {
+            return $this->asJson([
+                'success' => false,
+                'error' => $message,
+            ]);
+        }
+
+        Craft::$app->getSession()->setError($message);
+        return null;
     }
 }

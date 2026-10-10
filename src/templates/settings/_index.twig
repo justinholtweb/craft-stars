@@ -170,6 +170,17 @@
 }) }}
 
 {{ forms.textField({
+    label: 'Submissions per Hour'|t('stars'),
+    instructions: 'Most reviews and comments one address can post in an hour, across every entry. Set to 0 to disable.'|t('stars'),
+    id: 'maxSubmissionsPerHour',
+    name: 'maxSubmissionsPerHour',
+    value: settings.maxSubmissionsPerHour,
+    type: 'number',
+    min: 0,
+    warning: configWarning('maxSubmissionsPerHour'),
+}) }}
+
+{{ forms.textField({
     label: 'Min Submission Time (seconds)'|t('stars'),
     instructions: 'Reject submissions faster than this many seconds (bot detection). Set to 0 to disable.'|t('stars'),
     id: 'minSubmissionTime',

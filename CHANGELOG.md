@@ -34,6 +34,42 @@
   still count towards the aggregate), and the list holds the newest 10 rather than every review.
 - The JSON-LD's aggregate rating is read from the stored summary.
 
+## 5.1.2 - 2026-10-03
+
+Not released on its own; these changes ship in 5.2.0.
+
+### Security
+- The submission URL is the browser's `Referer` header, which a script can set
+  to anything. It was stored as given and linked in the review or comment
+  sidebar, so a `javascript:` value ran in a moderator's session when clicked.
+  Only http(s) URLs are stored now, and anything else already stored is shown
+  as plain text.
+- `craft.stars.reviews.schemaOrg()` now escapes `<`, `>`, `&` and quotes in the
+  JSON-LD, so review text can't close the `<script>` tag and run its own.
+- Reviews and comments can only be posted against a live entry. Before, any
+  element id was accepted: an unpublished entry, a user, an asset.
+- A reply has to go under an approved comment on the same entry. Before, it
+  could hang off a comment on another entry, or one still in moderation, and
+  that comment's author was emailed.
+- A new hourly budget per address (`maxSubmissionsPerHour`, default 10) covers
+  reviews and comments across every entry. The per-entry limit allowed one
+  post per entry, so a script could work through the whole site. It also read
+  the stored IP, so it did nothing with IP capture off. The budget lives in the
+  cache, and `X-Forwarded-For` is only believed once `trustedHosts` is set.
+
+  **Upgrading behind a proxy or CDN?** Set Craft's `trustedHosts` to the
+  proxy's addresses. Otherwise every visitor is charged to the proxy, and the
+  whole site shares one budget. Raise `maxSubmissionsPerHour`, or set it to `0`,
+  if you can't.
+
+### Fixed
+- A review posted without a rating was saved with the top mark. It's now
+  refused with "Please choose a rating."
+
+### Changed
+- `schemaOrg()` returns markup, so `|raw` is no longer needed. Templates that
+  still use it keep working.
+
 ## 5.1.1 - 2026-09-24
 
 ### Fixed
