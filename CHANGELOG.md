@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 5.2.0 - 2026-10-10
 > {warning} If your Schema Item Type is `LocalBusiness`, `Organization` or `Restaurant` and the
 > entries being reviewed are *other* businesses (a directory or guide), turn on **Reviews Are About
 > Other Businesses** after updating, or the JSON-LD stops being printed.
